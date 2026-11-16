@@ -3,6 +3,10 @@
 
 const LEVEL = { NONE: 0, FIRST_QUARTILE: 1, SECOND_QUARTILE: 2, THIRD_QUARTILE: 3, FOURTH_QUARTILE: 4 };
 
+// Star dates are asked for separately: if the token isn't allowed to read
+// them, GitHub blanks out each whole repo, not just that one field.
+const STARS_QUERY = `query($login:String!){ user(login:$login){ repositories(first:100, ownerAffiliations:OWNER, privacy:PUBLIC){ nodes{ name stargazers(last:1){ edges{ starredAt } } } } } }`;
+
 const QUERY = `query($login:String!){
   user(login:$login){
     login
@@ -15,7 +19,6 @@ const QUERY = `query($login:String!){
         issues(states:OPEN){ totalCount }
         pullRequests(states:OPEN){ totalCount }
         releases(last:1){ nodes{ publishedAt } }
-        stargazers(last:1){ edges{ starredAt } }
       }
     }
   }
@@ -66,16 +69,28 @@ export async function fetchRaw(username, token) {
     open_issues: r.issues?.totalCount ?? null,
     open_prs: r.pullRequests?.totalCount ?? null,
     last_release_at: r.releases?.nodes?.[0]?.publishedAt || null,
-    last_starred_at: r.stargazers?.edges?.[0]?.starredAt || null,
+    last_starred_at: null,
   }));
-  if (!u.repositories) {
+  // Fill in any repos GraphQL left blank from the public REST list.
+  if (!u.repositories || u.repositories.nodes?.some((n) => !n)) {
     const rest = await gh(`https://api.github.com/users/${username}/repos?type=owner&sort=pushed&per_page=100`, token);
-    repos = rest.map((r) => ({
+    const have = new Set(repos.map((r) => r.name));
+    repos = repos.concat(rest.filter((r) => !have.has(r.name) && !r.private).map((r) => ({
       name: r.name, fork: r.fork, stars: r.stargazers_count, size_kb: r.size || 0, pushed_at: r.pushed_at,
       language: r.language || null, language_color: LANG_COLORS[r.language] || (r.language ? '#8b949e' : null),
       open_issues: null, open_prs: null, last_release_at: null, last_starred_at: null,
-    }));
+    })));
   }
+  try {
+    const sj = await gh('https://api.github.com/graphql', token, { query: STARS_QUERY, variables: { login: username } });
+    for (const n of sj.data?.user?.repositories?.nodes || []) {
+      const r = n && repos.find((x) => x.name === n.name);
+      if (r) r.last_starred_at = n.stargazers?.edges?.[0]?.starredAt || null;
+    }
+  } catch { /* star dates are optional */ }
+  // Your profile repo (named like you) holds this city; it isn't a project,
+  // so it gets no tower and its commits stay off the billboard.
+  repos = repos.filter((r) => r.name.toLowerCase() !== username.toLowerCase());
 
   let followers = u.followers?.totalCount ?? null;
   if (followers == null) {
