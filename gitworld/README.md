@@ -42,7 +42,7 @@ Nothing is made up: if the data isn't there, that detail is left out.
 | Buildings | Exactly one per repository you own (up to 60): public ones named, private ones (with the `GITWORLD_TOKEN` key) and the profile repo unnamed. Height = size + stars. Nothing else stands on the street |
 | Repo name signs (classic-blue, neon-rain, cyberpunk) | Those same repos' names |
 | Tower colors (synthwave) | Each repo's main language |
-| How many windows are lit | Contributions in the last 7 days (more activity, brighter city) |
+| Lit windows | Each building's own repo: lights fill from the ground floor up as high as the repo is recent (today = top, a month = about half, a year = almost dark); pushed in the last day = flickering top floors |
 | Windows (github-light) | Your real contribution calendar, in GitHub's greens |
 | Moon phase (classic-blue) | Days since your last contribution, full moon = today |
 | Billboard | Your latest commit messages |

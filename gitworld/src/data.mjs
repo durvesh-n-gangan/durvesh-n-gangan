@@ -11,7 +11,7 @@ const STARS_QUERY = `query($login:String!){ user(login:$login){ repositories(fir
 // Private repos: only readable with a personal key (the GITWORLD_TOKEN
 // secret). Asked for as the key's owner ("viewer"), and only the size and
 // open-issue count are kept: names never leave this file.
-const PRIVATE_QUERY = `query{ viewer{ login repositories(first:100, ownerAffiliations:OWNER, privacy:PRIVATE, orderBy:{field:PUSHED_AT, direction:DESC}){ nodes{ name isFork diskUsage stargazerCount issues(states:OPEN){ totalCount } } } } }`;
+const PRIVATE_QUERY = `query{ viewer{ login repositories(first:100, ownerAffiliations:OWNER, privacy:PRIVATE, orderBy:{field:PUSHED_AT, direction:DESC}){ nodes{ name isFork diskUsage stargazerCount pushedAt issues(states:OPEN){ totalCount } } } } }`;
 
 const QUERY = `query($login:String!){
   user(login:$login){
@@ -113,7 +113,7 @@ export async function fetchRaw(username, token, { includePrivate = true, private
       else {
         private_towers = (v.repositories?.nodes || []).filter((n) => n && !n.isFork).map((n) => ({
           id: createHash('sha1').update('private:' + n.name).digest('hex').slice(0, 12),
-          size_kb: n.diskUsage || 0, stars: n.stargazerCount || 0, open_issues: n.issues?.totalCount ?? 0,
+          size_kb: n.diskUsage || 0, stars: n.stargazerCount || 0, open_issues: n.issues?.totalCount ?? 0, pushed_at: n.pushedAt || null,
         }));
       }
     } catch (e) {
@@ -170,8 +170,12 @@ export function derive(raw, { todayISO, learning = '' }) {
   for (const r of own) if (r.language) (langs[r.language] ||= { name: r.language, color: r.language_color, repos: 0 }).repos++;
   const month = new Date(todayISO + 'T12:00:00Z').getUTCMonth();
   const year = Number(todayISO.slice(0, 4));
+  // Each repo's days since its last push: drives how many of its windows are lit.
+  const withAge = (r) => ({ ...r, days_since_push: daysSince(r.pushed_at, today) });
   return {
     ...raw,
+    repos: (raw.repos || []).map(withAge),
+    private_towers: (raw.private_towers || []).map(withAge),
     calendar: cal,
     week: last7.reduce((s, d) => s + d.count, 0),
     streak,

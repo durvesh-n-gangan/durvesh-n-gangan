@@ -126,6 +126,17 @@ for (const [name, raw] of Object.entries(fixtures)) {
   console.log('private repos checked: unnamed, issue antennas, no leaks');
 }
 
+// Windows: lights fill each building as high as its repo is recent.
+{
+  const t = THEMES.find((x) => x.name === 'classic-blue');
+  const at = (iso) => derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [],
+    repos: ['a', 'b', 'c', 'd', 'e'].map((n) => ({ name: n, fork: false, stars: 0, size_kb: 2000, pushed_at: iso })), recent_commits: [] }, { todayISO: today });
+  const litCount = (svg) => t.win.reduce((n, c) => n + (svg.split(`fill="${c}"`).length - 1), 0);
+  const fresh = litCount(render(t, at(today + 'T08:00:00Z'))), month = litCount(render(t, at('2026-10-16T08:00:00Z'))), old = litCount(render(t, at('2025-06-01T08:00:00Z')));
+  if (!(fresh > month && month > old && old > 0)) { fails++; console.error(`FAIL lit windows should drop with age: today ${fresh}, month ${month}, old ${old}`); }
+  console.log(`windows by recency: today ${fresh} lit, a month ago ${month}, over a year ${old}`);
+}
+
 const cfg = { theme: 'classic-blue', light_theme: 'github-light', auto: { festivals: true, seasons: true } };
 const expect = { '2026-11-08': 'diwali', '2026-03-04': 'holi', '2026-12-31': 'new-year', '2026-10-28': 'halloween', '2026-12-15': 'winter-night', '2026-04-01': 'sakura-dusk', '2026-10-05': 'autumn', '2026-07-01': 'classic-blue' };
 for (const [d, want] of Object.entries(expect)) {
