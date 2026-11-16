@@ -16,7 +16,7 @@
 - Each tall tower with a name sign is one of my public repositories. Bigger and more-starred repos are taller.
 - The more I've contributed in the last 7 days, the more windows are lit.
 - An antenna with a blinking light on a tower means that repo has open issues. The more issues, the faster it blinks. No antenna means no open issues.
-- Buildings without a name sign are just scenery.
+- Buildings without a name sign are scenery, or my private repos with their names hidden. A private repo with open issues gets a blinking antenna too.
 - The little creatures on the street are open issues as well.
 - In some themes, a billboard stands on the repo I committed to most recently and scrolls its latest commit messages.
 - The city is redrawn every hour from my GitHub activity.

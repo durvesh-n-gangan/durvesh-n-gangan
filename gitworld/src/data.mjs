@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 // Fetches real GitHub data (inside the GitHub Action, using GITHUB_TOKEN)
 // and turns it into the numbers the renderer uses.
 
@@ -6,6 +7,11 @@ const LEVEL = { NONE: 0, FIRST_QUARTILE: 1, SECOND_QUARTILE: 2, THIRD_QUARTILE: 
 // Star dates are asked for separately: if the token isn't allowed to read
 // them, GitHub blanks out each whole repo, not just that one field.
 const STARS_QUERY = `query($login:String!){ user(login:$login){ repositories(first:100, ownerAffiliations:OWNER, privacy:PUBLIC){ nodes{ name stargazers(last:1){ edges{ starredAt } } } } } }`;
+
+// Private repos: only readable with a personal key (the GITWORLD_TOKEN
+// secret). Asked for as the key's owner ("viewer"), and only the size and
+// open-issue count are kept: names never leave this file.
+const PRIVATE_QUERY = `query{ viewer{ login repositories(first:100, ownerAffiliations:OWNER, privacy:PRIVATE, orderBy:{field:PUSHED_AT, direction:DESC}){ nodes{ name isFork diskUsage stargazerCount issues(states:OPEN){ totalCount } } } } }`;
 
 const QUERY = `query($login:String!){
   user(login:$login){
@@ -47,7 +53,7 @@ const warn = (msg) => console.warn(process.env.GITHUB_ACTIONS ? `::warning title
 // repos. GraphQL then returns what it can and marks the rest as errors, so
 // keep the partial answer, fill gaps from the public REST API, and leave out
 // anything still unknown (the city simply skips that detail).
-export async function fetchRaw(username, token) {
+export async function fetchRaw(username, token, { includePrivate = true } = {}) {
   if (!token) throw new Error('GITHUB_TOKEN is not set. Use --demo to render with sample data.');
   const json = await gh('https://api.github.com/graphql', token, { query: QUERY, variables: { login: username } });
   const u = json.data?.user;
@@ -92,6 +98,22 @@ export async function fetchRaw(username, token) {
   // so it gets no tower and its commits stay off the billboard.
   repos = repos.filter((r) => r.name.toLowerCase() !== username.toLowerCase());
 
+  // Private repos become unnamed towers. Each gets an opaque id (a hash of
+  // its name) so it keeps the same building; the name itself is dropped.
+  let private_towers = [];
+  if (includePrivate) {
+    try {
+      const pj = await gh('https://api.github.com/graphql', token, { query: PRIVATE_QUERY });
+      const v = pj.data?.viewer;
+      if (v && v.login.toLowerCase() === username.toLowerCase()) {
+        private_towers = (v.repositories?.nodes || []).filter((n) => n && !n.isFork).map((n) => ({
+          id: createHash('sha1').update('private:' + n.name).digest('hex').slice(0, 12),
+          size_kb: n.diskUsage || 0, stars: n.stargazerCount || 0, open_issues: n.issues?.totalCount ?? 0,
+        }));
+      }
+    } catch { /* no personal key, or it can't see private repos: public only */ }
+  }
+
   let followers = u.followers?.totalCount ?? null;
   if (followers == null) {
     try { followers = (await gh(`https://api.github.com/users/${username}`, token)).followers ?? null; } catch { /* leave unknown */ }
@@ -117,6 +139,7 @@ export async function fetchRaw(username, token) {
     contributions: cc?.totalContributions ?? 0,
     calendar,
     repos,
+    private_towers,
     recent_commits: recent_commits.map(({ repo, msg }) => ({ repo, msg })),
   };
 }

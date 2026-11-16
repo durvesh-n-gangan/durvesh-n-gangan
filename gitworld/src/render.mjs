@@ -99,7 +99,12 @@ export function layoutCity(data) {
     x += w + (R() < 0.14 ? 14 : 3);
   }
   const tallSlots = slots.filter((s) => !s.small);
-  const repos = [...(data.repos || [])].filter((r) => !r.fork).sort((a, b) => repoScore(b) - repoScore(a)).slice(0, Math.min(12, tallSlots.length));
+  // Public repos first (they carry name signs), then private repos as
+  // unnamed towers in whatever reserved towers are left.
+  const pub = [...(data.repos || [])].filter((r) => !r.fork).sort((a, b) => repoScore(b) - repoScore(a));
+  const priv = [...(data.private_towers || [])].map((p) => ({ name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues }))
+    .sort((a, b) => repoScore(b) - repoScore(a));
+  const repos = [...pub, ...priv].slice(0, Math.min(12, tallSlots.length));
   // The 12 widest towers are reserved for repos (so name signs fit). Each
   // repo picks its tower from a hash of its own name, so it keeps the same
   // building when you add, delete or hide other repos.

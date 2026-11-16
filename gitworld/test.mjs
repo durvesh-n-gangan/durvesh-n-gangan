@@ -75,6 +75,43 @@ for (const [name, raw] of Object.entries(fixtures)) {
   console.log('issue antennas and blink speed checked in every theme');
 }
 
+// Private repos: unnamed towers with issue antennas; their names never
+// leave the fetch step and never reach the picture.
+{
+  const { fetchRaw } = await import('./src/data.mjs');
+  const realFetch = globalThis.fetch;
+  const ok = (b) => ({ ok: true, json: async () => b });
+  const pub = (name, issues) => ({ name, isFork: false, stargazerCount: 0, diskUsage: 800, pushedAt: '2026-11-15T00:00:00Z', primaryLanguage: null, issues: { totalCount: issues }, pullRequests: { totalCount: 0 }, releases: { nodes: [] } });
+  globalThis.fetch = async (url, o) => {
+    if (url.endsWith('/graphql')) {
+      const q = JSON.parse(o.body).query;
+      if (q.includes('viewer')) return ok({ data: { viewer: { login: 'durvesh-n-gangan', repositories: { nodes: [
+        { name: 'SECRET-diary', isFork: false, diskUsage: 5000, stargazerCount: 0, issues: { totalCount: 4 } },
+        { name: 'SECRET-startup', isFork: false, diskUsage: 900, stargazerCount: 0, issues: { totalCount: 0 } }] } } } });
+      if (q.includes('stargazers')) return ok({ data: null });
+      return ok({ data: { user: { login: 'durvesh-n-gangan', followers: { totalCount: 1 }, repositories: { nodes: [pub('NL2SQL', 0), pub('Floating-Timer', 0)] },
+        contributionsCollection: { contributionCalendar: { totalContributions: 3, weeks: [] } } } } });
+    }
+    if (url.includes('SECRET')) throw new Error('fetched a private repo by name: ' + url);
+    return ok([{ commit: { author: { date: '2026-11-15' }, message: 'public commit' } }]);
+  };
+  try {
+    const raw = await fetchRaw('durvesh-n-gangan', 'x');
+    const d = derive(raw, { todayISO: today });
+    if (JSON.stringify(raw).includes('SECRET')) { fails++; console.error('FAIL private repo name kept in fetched data'); }
+    if (raw.private_towers.length !== 2) { fails++; console.error('FAIL expected 2 private towers'); }
+    if (d.repo_count !== 2) { fails++; console.error('FAIL repo count should only include public repos'); }
+    for (const t of THEMES) {
+      const svg = render(t, d);
+      if (svg.includes('SECRET') || raw.private_towers.some((p) => svg.includes(p.id))) { fails++; console.error(`FAIL ${t.name}: private repo leaked into picture`); }
+      if ((svg.match(/tw beacon/g) || []).length !== 1) { fails++; console.error(`FAIL ${t.name}: private repo with issues should have one antenna`); }
+    }
+    const noKey = await (async () => { globalThis.fetch = async (url, o) => (url.endsWith('/graphql') && JSON.parse(o.body).query.includes('viewer') ? ok({ errors: [{ message: 'Resource not accessible by integration' }] }) : realFetch === undefined ? ok([]) : ok({ data: { user: { login: 'durvesh-n-gangan', followers: { totalCount: 1 }, repositories: { nodes: [pub('NL2SQL', 0)] }, contributionsCollection: { contributionCalendar: { totalContributions: 0, weeks: [] } } } } })); return fetchRaw('durvesh-n-gangan', 'x'); })();
+    if (noKey.private_towers.length !== 0) { fails++; console.error('FAIL without a personal key there should be no private towers'); }
+  } finally { globalThis.fetch = realFetch; }
+  console.log('private repos checked: unnamed, issue antennas, no leaks');
+}
+
 const cfg = { theme: 'classic-blue', light_theme: 'github-light', auto: { festivals: true, seasons: true } };
 const expect = { '2026-11-08': 'diwali', '2026-03-04': 'holi', '2026-12-31': 'new-year', '2026-10-28': 'halloween', '2026-12-15': 'winter-night', '2026-04-01': 'sakura-dusk', '2026-10-05': 'autumn', '2026-07-01': 'classic-blue' };
 for (const [d, want] of Object.entries(expect)) {

@@ -12,7 +12,8 @@
 import { E, anim, pick, twinkle, textW, clamp, r1, esc } from './svg.mjs';
 
 const tall = (ctx) => ctx.city.filter((b) => !b.small);
-const landmarks = (ctx) => ctx.city.filter((b) => b.repo);
+// Towers of public repos (named). Private repos' towers have no name sign.
+const landmarks = (ctx) => ctx.city.filter((b) => b.repo && !b.repo.private);
 const spread = (arr, n) => {
   if (n >= arr.length) return arr;
   const out = [];

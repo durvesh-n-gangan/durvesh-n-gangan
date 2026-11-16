@@ -9,5 +9,6 @@
   "rotate_list": [],
   "timezone": "Asia/Kolkata",
   "learning": "",
-  "output_dir": "assets/gitworld"
+  "output_dir": "assets/gitworld",
+  "private_repos": true
 }
