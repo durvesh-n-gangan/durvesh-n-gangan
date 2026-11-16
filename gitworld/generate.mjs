@@ -10,7 +10,12 @@
 //   <output_dir>/gitworld-dark.svg    the live city for dark-mode visitors
 //   <output_dir>/gitworld-light.svg   the live city for light-mode visitors
 //   <output_dir>/themes/<name>.svg    every theme, for browsing and switching
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+//   <output_dir>/live/gitworld-<mode>-<hash>.svg  the same live city under a
+//                                     name that changes whenever the picture does;
+//                                     README.md points here so browsers never
+//                                     show a stale copy
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { THEMES } from './src/themes.mjs';
@@ -65,10 +70,18 @@ for (const t of THEMES) {
 }
 
 const pick = selectThemes(cfg, today, override);
+const liveDir = join(out, 'live');
+mkdirSync(liveDir, { recursive: true });
+const liveFiles = {};
 for (const [mode, name] of [['dark', pick.dark], ['light', pick.light]]) {
   if (!rendered[name]) { failures.push(`live ${mode} theme "${name}" did not render`); continue; }
   writeFileSync(join(out, `gitworld-${mode}.svg`), rendered[name]);
+  const file = `gitworld-${mode}-${createHash('sha1').update(rendered[name]).digest('hex').slice(0, 10)}.svg`;
+  writeFileSync(join(liveDir, file), rendered[name]);
+  liveFiles[mode] = file;
 }
+// Keep only the current versions.
+for (const f of readdirSync(liveDir)) if (!Object.values(liveFiles).includes(f)) unlinkSync(join(liveDir, f));
 writeFileSync(join(out, 'themes.json'), JSON.stringify({ user: data.username, date: today, live: pick, themes: THEMES.map((t) => ({ name: t.name, label: t.label, mode: t.mode || 'dark' })) }, null, 2));
 
 // THEMES.md: a gallery page anyone can browse on GitHub, kept in sync with the code.
@@ -77,6 +90,16 @@ const md = ['# GitWorld themes', '', `Every theme below is drawn from the same d
   `Live right now: **${pick.dark}** for dark mode, **${pick.light}** for light mode (${pick.reason}).`, ''];
 for (const t of THEMES) md.push(`### ${t.label}`, '', `\`"theme": "${t.name}"\``, '', `<img src="./${rel}/themes/${t.name}.svg" alt="${t.label} GitWorld city" width="100%">`, '');
 writeFileSync(join(root, 'THEMES.md'), md.join('\n'));
+
+// Point README.md at the current versions (only the image paths change).
+const readmePath = join(root, 'README.md');
+if (existsSync(readmePath) && liveFiles.dark && liveFiles.light) {
+  const readme = readFileSync(readmePath, 'utf8');
+  const esc = rel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const next = readme.replace(new RegExp(`\\./${esc}/(?:live/)?gitworld-(dark|light)(?:-[0-9a-f]{10})?\\.svg`, 'g'),
+    (_, mode) => `./${rel}/live/${liveFiles[mode]}`);
+  if (next !== readme) writeFileSync(readmePath, next);
+}
 
 console.log(`${useDemo ? 'demo data' : '@' + data.username} · ${today} · live: dark=${pick.dark}, light=${pick.light} (${pick.reason})`);
 console.log(`rendered ${Object.keys(rendered).length}/${THEMES.length} themes into ${out}`);
