@@ -2,7 +2,7 @@
 
 Every theme below is drawn from the same data. To switch, set `"theme"` in `gitworld.config.json` (or run the **GitWorld city** workflow by hand and pick one).
 
-Live right now: **winter-night** for dark mode, **github-light** for light mode (configured theme).
+Live right now: **classic-blue** for dark mode, **classic-blue** for light mode (configured theme).
 
 ### Classic blue
 
