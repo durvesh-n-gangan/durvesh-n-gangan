@@ -1,0 +1,10 @@
+{
+  "username": "durvesh-n-gangan",
+  "theme": "classic-blue",
+  "light_theme": "github-light",
+  "auto": { "festivals": true, "seasons": false },
+  "rotate_list": [],
+  "timezone": "Asia/Kolkata",
+  "learning": "",
+  "output_dir": "assets/gitworld"
+}

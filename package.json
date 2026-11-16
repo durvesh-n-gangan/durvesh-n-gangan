@@ -1,0 +1,11 @@
+{
+  "name": "gitworld-profile",
+  "private": true,
+  "type": "module",
+  "description": "Animated GitWorld city for a GitHub profile README, with switchable themes.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "node gitworld/generate.mjs",
+    "demo": "node gitworld/generate.mjs --demo"
+  }
+}

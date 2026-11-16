@@ -1,0 +1,68 @@
+name: GitWorld city
+
+on:
+  schedule:
+    - cron: "30 0 * * *" # every day at 06:00 India time
+  workflow_dispatch:
+    inputs:
+      theme:
+        description: "Theme for this run only. 'config' uses gitworld.config.json."
+        type: choice
+        default: config
+        options:
+          - config
+          - rotate
+          - random
+          - classic-blue
+          - synthwave
+          - neon-rain
+          - winter-night
+          - diwali
+          - pastel-day
+          - github-light
+          - sakura-dusk
+          - golden-hour
+          - gameboy
+          - mars-colony
+          - underwater
+          - matrix
+          - aurora
+          - cyberpunk
+          - autumn
+          - halloween
+          - new-year
+          - holi
+          - noir
+          - desert-oasis
+          - lunar-base
+  push:
+    branches: [main]
+    paths: ["gitworld/**", "gitworld.config.json"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gitworld
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Draw the city
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITWORLD_THEME: ${{ github.event.inputs.theme != 'config' && github.event.inputs.theme || '' }}
+        run: node gitworld/generate.mjs
+      - name: Save the new images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/gitworld THEMES.md
+          git diff --cached --quiet || git commit -m "chore: redraw gitworld city"
+          git push
