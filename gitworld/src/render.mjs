@@ -94,17 +94,24 @@ const repoScore = (r) => Math.log2(1 + (r.stars || 0) * 4 + (r.commits || 0) + (
 
 // One tower per repository you own (public with a name sign, private and
 // your profile repo without), and nothing else on the street, so counting
-// the towers gives your repository count. Towers keep their left-to-right
-// order (sorted by a hash of the repo), and a tower's height comes from that
-// repo's own size and stars.
+// the towers gives your repository count. Towers stand left to right in the
+// order the repos were created (oldest left), and a tower's height comes from
+// that repo's own size and stars.
 export const MAX_TOWERS = 60; // more than this can't fit in 900px
 export function layoutCity(data) {
   const towers = [
     ...(data.repos || []).map((r) => ({ key: 'pub:' + r.name, repo: r })),
-    ...(data.private_towers || []).map((p) => ({ key: 'priv:' + p.id, repo: { name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues, days_since_push: p.days_since_push, day_counts: p.day_counts } })),
+    ...(data.private_towers || []).map((p) => ({ key: 'priv:' + p.id, repo: { name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues, days_since_push: p.days_since_push, day_counts: p.day_counts, created_at: p.created_at } })),
   ];
   const shown = towers.sort((a, b) => repoScore(b.repo) - repoScore(a.repo)).slice(0, MAX_TOWERS)
-    .sort((a, b) => hash('tower:' + a.key) - hash('tower:' + b.key));
+    // Left to right in the order you created the repos: oldest on the left,
+    // newest on the right, so a new repo always appears at the right end.
+    // (Repos without a known date go last, in a fixed order.)
+    .sort((a, b) => {
+      const ta = Date.parse(a.repo.created_at), tb = Date.parse(b.repo.created_at);
+      const ka = Number.isNaN(ta) ? Infinity : ta, kb = Number.isNaN(tb) ? Infinity : tb;
+      return ka - kb || hash('tower:' + a.key) - hash('tower:' + b.key);
+    });
   if (!shown.length) return [];
   // Each tower's width comes from its own hash, so adding or removing a repo
   // only nudges the spacing and never reorders the skyline.

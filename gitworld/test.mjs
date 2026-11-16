@@ -164,6 +164,23 @@ for (const [name, raw] of Object.entries(fixtures)) {
   console.log('day windows checked in every theme: today top-right, 3 intensities, old days not shown');
 }
 
+// Buildings stand in creation order: oldest left, newest right, public and
+// private mixed by date; a new repo appears at the right end.
+{
+  const { layoutCity } = await import('./src/render.mjs');
+  const pubR = (name, created) => ({ name, fork: false, stars: 0, size_kb: 500, pushed_at: '2026-11-01T00:00:00Z', created_at: created });
+  const repos = [pubR('third', '2025-03-01T00:00:00Z'), pubR('first', '2023-01-10T00:00:00Z'), pubR('fifth', '2026-09-09T00:00:00Z')];
+  const priv = [{ id: 'second', size_kb: 900, stars: 0, open_issues: 0, created_at: '2024-06-01T00:00:00Z' }, { id: 'fourth', size_kb: 100, stars: 0, open_issues: 0, created_at: '2026-01-01T00:00:00Z' }];
+  const names = (r, p) => layoutCity({ username: 'durvesh-n-gangan', repos: r, private_towers: p }).map((b) => b.repo.name).join(',');
+  const got = names(repos, priv);
+  if (got !== 'first,second,third,fourth,fifth') { fails++; console.error(`FAIL buildings should be in creation order, got ${got}`); }
+  const withNew = names([...repos, pubR('brand-new', '2026-11-15T00:00:00Z')], priv);
+  if (withNew !== got + ',brand-new') { fails++; console.error(`FAIL a new repo should appear at the right end, got ${withNew}`); }
+  const xs = layoutCity({ username: 'durvesh-n-gangan', repos, private_towers: priv }).map((b) => b.x);
+  if (xs.some((x, i) => i && x <= xs[i - 1])) { fails++; console.error('FAIL buildings should run left to right'); }
+  console.log('creation order checked: oldest left, newest right, new repos join on the right');
+}
+
 const cfg = { theme: 'classic-blue', light_theme: 'github-light', auto: { festivals: true, seasons: true } };
 const expect = { '2026-11-08': 'diwali', '2026-03-04': 'holi', '2026-12-31': 'new-year', '2026-10-28': 'halloween', '2026-12-15': 'winter-night', '2026-04-01': 'sakura-dusk', '2026-10-05': 'autumn', '2026-07-01': 'classic-blue' };
 for (const [d, want] of Object.entries(expect)) {

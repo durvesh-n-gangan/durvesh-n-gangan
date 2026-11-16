@@ -11,7 +11,7 @@ const STARS_QUERY = `query($login:String!){ user(login:$login){ repositories(fir
 // Private repos: only readable with a personal key (the GITWORLD_TOKEN
 // secret). Asked for as the key's owner ("viewer"), and only the size and
 // open-issue count are kept: names never leave this file.
-const PRIVATE_QUERY = `query{ viewer{ login repositories(first:100, ownerAffiliations:OWNER, privacy:PRIVATE, orderBy:{field:PUSHED_AT, direction:DESC}){ nodes{ name isFork diskUsage stargazerCount pushedAt issues(states:OPEN){ totalCount } } } } }`;
+const PRIVATE_QUERY = `query{ viewer{ login repositories(first:100, ownerAffiliations:OWNER, privacy:PRIVATE, orderBy:{field:PUSHED_AT, direction:DESC}){ nodes{ name isFork diskUsage stargazerCount pushedAt createdAt issues(states:OPEN){ totalCount } } } } }`;
 
 // Your commits per repo per day over the past year (GitHub's own
 // contribution data). Only dates and counts are kept.
@@ -34,7 +34,7 @@ const QUERY = `query($login:String!){
     contributionsCollection{ contributionCalendar{ totalContributions weeks{ contributionDays{ date contributionCount contributionLevel } } } }
     repositories(first:100, ownerAffiliations:OWNER, privacy:PUBLIC, orderBy:{field:PUSHED_AT, direction:DESC}){
       nodes{
-        name isFork stargazerCount diskUsage pushedAt
+        name isFork stargazerCount diskUsage pushedAt createdAt
         primaryLanguage{ name color }
         issues(states:OPEN){ totalCount }
         pullRequests(states:OPEN){ totalCount }
@@ -87,6 +87,7 @@ export async function fetchRaw(username, token, { includePrivate = true, private
     stars: r.stargazerCount ?? 0,
     size_kb: r.diskUsage || 0,
     pushed_at: r.pushedAt,
+    created_at: r.createdAt || null,
     language: r.primaryLanguage?.name || null,
     language_color: r.primaryLanguage?.color || null,
     open_issues: r.issues?.totalCount ?? null,
@@ -99,7 +100,7 @@ export async function fetchRaw(username, token, { includePrivate = true, private
     const rest = await gh(`https://api.github.com/users/${username}/repos?type=owner&sort=pushed&per_page=100`, token);
     const have = new Set(repos.map((r) => r.name));
     repos = repos.concat(rest.filter((r) => !have.has(r.name) && !r.private).map((r) => ({
-      name: r.name, fork: r.fork, stars: r.stargazers_count, size_kb: r.size || 0, pushed_at: r.pushed_at,
+      name: r.name, fork: r.fork, stars: r.stargazers_count, size_kb: r.size || 0, pushed_at: r.pushed_at, created_at: r.created_at || null,
       language: r.language || null, language_color: LANG_COLORS[r.language] || (r.language ? '#8b949e' : null),
       open_issues: null, open_prs: null, last_release_at: null, last_starred_at: null,
     })));
@@ -138,7 +139,7 @@ export async function fetchRaw(username, token, { includePrivate = true, private
         if (hist && !nodes.some((n) => hist.has(n.name)) && nodes.some((n) => Date.parse(n.pushedAt) > yearAgo)) hist = null;
         private_towers = nodes.map((n) => ({
           id: createHash('sha1').update('private:' + n.name).digest('hex').slice(0, 12),
-          size_kb: n.diskUsage || 0, stars: n.stargazerCount || 0, open_issues: n.issues?.totalCount ?? 0, pushed_at: n.pushedAt || null,
+          size_kb: n.diskUsage || 0, stars: n.stargazerCount || 0, open_issues: n.issues?.totalCount ?? 0, pushed_at: n.pushedAt || null, created_at: n.createdAt || null,
           commit_days: hist ? hist.get(n.name) || [] : null,
         }));
       }

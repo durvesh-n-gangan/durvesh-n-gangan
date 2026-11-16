@@ -14,6 +14,7 @@
 <summary>How this city works</summary>
 
 - Every building is one of my repositories, so counting the buildings gives my repository count. Public repos have a name sign; private repos and this profile repo have none. Bigger and more-starred repos are taller.
+- The buildings stand in the order I created the repos: my oldest repo on the left, my newest on the right. A new repo joins at the right end.
 - Every window is one day. Read a building like a calendar: the bottom-left window is the oldest day, then left to right along each floor and floor by floor upward, and the top-right window is today. A window lights up on a day I committed to that repo, and the more commits that day, the stronger its colour. Today's window flickers if I committed today.
 - An antenna with a blinking light on a tower means that repo has open issues. The more issues, the faster it blinks. No antenna means no open issues.
 - The little creatures on the street are open issues as well.
