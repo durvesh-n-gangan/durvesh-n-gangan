@@ -227,13 +227,13 @@ export function render(themeIn, data) {
         }
       }
       if (t.topDome && R() < 0.4) p.push(E('path', { d: `M${r1(b.x + 2)} ${r1(b.y)}a${r1(b.w / 2 - 2)} ${r1(b.w / 2 - 2)} 0 0 1 ${r1(b.w - 4)} 0z`, fill: t.topDome, opacity: 0.4 }));
-      // Rooftop antennas with a blinking light in the theme's beacon colour.
-      // A project tower with open issues always gets one (its name sign
-      // then shows how many issues).
-      if (b.antenna || b.repo?.open_issues > 0) {
+      // An antenna with a blinking light (in the theme's beacon colour) means
+      // exactly one thing: this repo has open issues. The tag under its name
+      // sign says what they are. No issues, no antenna.
+      if (b.repo?.open_issues > 0) {
         const cx = b.x + b.w / 2;
         p.push(E('line', { x1: cx, y1: b.y, x2: cx, y2: b.y - 14, stroke: t.antenna, 'stroke-width': 1.5 }) +
-          E('circle', { cx, cy: b.y - 15, r: 2.2, fill: t.beacon, class: 'tw', style: `animation-duration:1.4s;animation-delay:-${r1((b.x % 13) / 10)}s` }));
+          E('circle', { cx, cy: b.y - 15, r: 2.2, fill: t.beacon, class: 'tw beacon', style: `animation-duration:1.4s;animation-delay:-${r1((b.x % 13) / 10)}s` }));
       }
     } else {
       const door = t.windowMode === 'contrib' ? t.win[1] : t.win[0];

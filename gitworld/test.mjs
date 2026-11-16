@@ -59,6 +59,18 @@ for (const [name, raw] of Object.entries(fixtures)) {
   const svg = render(THEMES.find((t) => t.name === 'classic-blue'), data);
   if (!svg.includes('License   ·   fix: drag') || svg.includes('chore: tidy')) { fails++; console.error('FAIL billboard should show only Floating-Timer commits'); }
   console.log('stable towers and billboard checked');
+
+  // Antennas only on repos with open issues, and the tag names the issue.
+  const quiet = render(THEMES.find((t) => t.name === 'classic-blue'), data);
+  if (quiet.includes('tw beacon')) { fails++; console.error('FAIL antenna light shown with no open issues'); }
+  const withIssue = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [],
+    repos: all.map((r) => (r.name === 'NL2SQL' ? { ...r, open_issues: 1, issue_titles: ['Query fails on joins'] } : r)), recent_commits: [] }, { todayISO: today });
+  for (const t of THEMES) {
+    const svg = render(t, withIssue);
+    if (!svg.includes('issue: Query fails on joins')) { fails++; console.error(`FAIL ${t.name}: issue title missing`); }
+    if ((svg.match(/tw beacon/g) || []).length !== 1) { fails++; console.error(`FAIL ${t.name}: expected exactly one blinking light`); }
+  }
+  console.log('issue antennas and tags checked in every theme');
 }
 
 const cfg = { theme: 'classic-blue', light_theme: 'github-light', auto: { festivals: true, seasons: true } };

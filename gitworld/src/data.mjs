@@ -16,7 +16,7 @@ const QUERY = `query($login:String!){
       nodes{
         name isFork stargazerCount diskUsage pushedAt
         primaryLanguage{ name color }
-        issues(states:OPEN){ totalCount }
+        issues(states:OPEN, first:3, orderBy:{field:CREATED_AT, direction:DESC}){ totalCount nodes{ title } }
         pullRequests(states:OPEN){ totalCount }
         releases(last:1){ nodes{ publishedAt } }
       }
@@ -67,6 +67,7 @@ export async function fetchRaw(username, token) {
     language: r.primaryLanguage?.name || null,
     language_color: r.primaryLanguage?.color || null,
     open_issues: r.issues?.totalCount ?? null,
+    issue_titles: (r.issues?.nodes || []).map((n) => n?.title).filter(Boolean),
     open_prs: r.pullRequests?.totalCount ?? null,
     last_release_at: r.releases?.nodes?.[0]?.publishedAt || null,
     last_starred_at: null,
@@ -78,7 +79,7 @@ export async function fetchRaw(username, token) {
     repos = repos.concat(rest.filter((r) => !have.has(r.name) && !r.private).map((r) => ({
       name: r.name, fork: r.fork, stars: r.stargazers_count, size_kb: r.size || 0, pushed_at: r.pushed_at,
       language: r.language || null, language_color: LANG_COLORS[r.language] || (r.language ? '#8b949e' : null),
-      open_issues: null, open_prs: null, last_release_at: null, last_starred_at: null,
+      open_issues: null, issue_titles: [], open_prs: null, last_release_at: null, last_starred_at: null,
     })));
   }
   try {
