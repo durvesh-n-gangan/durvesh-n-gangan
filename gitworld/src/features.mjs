@@ -12,8 +12,9 @@
 import { E, anim, pick, twinkle, textW, clamp, r1, esc } from './svg.mjs';
 
 const tall = (ctx) => ctx.city.filter((b) => !b.small);
-// Towers of public repos (named). Private repos' towers have no name sign.
-const landmarks = (ctx) => ctx.city.filter((b) => b.repo && !b.repo.private);
+// Towers that carry a name sign: public repos, except your profile repo.
+// Private repos' towers and the profile repo's tower have no sign.
+const landmarks = (ctx) => ctx.city.filter((b) => b.repo && !b.repo.private && !b.repo.profile);
 const spread = (arr, n) => {
   if (n >= arr.length) return arr;
   const out = [];
@@ -21,6 +22,7 @@ const spread = (arr, n) => {
   return out;
 };
 const MONO = 'monospace';
+const GY = 210; // ground line (matches render.mjs)
 
 // Commits as { repo, msg }; older data (demo, tests) may be plain strings.
 const commitsOf = (ctx) => (ctx.data.recent_commits || []).map((c) => (typeof c === 'string' ? { repo: null, msg: c } : c));
@@ -252,8 +254,12 @@ export const FEATURES = {
         if (max < 4) continue;
         let name = b.repo.name;
         if (name.length > max) name = name.slice(0, max - 1) + '…';
-        const w = textW(name) + 10, x = clamp(b.x + b.w / 2 - w / 2, 6, 894 - w), y = b.y + 12, c = colors[i % colors.length];
-        if (bb && x < bb.x + bb.width && x + w > bb.x && y < bb.y + 40) continue;
+        const w = textW(name) + 10, x = clamp(b.x + b.w / 2 - w / 2, 6, 894 - w), y0 = b.y + 12, c = colors[i % colors.length];
+        // Never hide a name: if the billboard (and its pole) covers the sign's
+        // usual spot, hang the sign lower on its own tower instead.
+        let y = y0;
+        const hit = (yy) => bb && x < bb.x + bb.width && x + w > bb.x && yy < bb.y + 38 && yy + 16 > bb.y;
+        while (hit(y) && y + 16 < GY - 20) y += 20;
         i++;
         s += E('g', { style: anim('neon', 3 + (i % 4) * 0.9, { delay: i }) },
           E('rect', { x, y, width: w, height: 16, rx: 3, fill: bg, stroke: c, 'stroke-width': 1.5 }) +

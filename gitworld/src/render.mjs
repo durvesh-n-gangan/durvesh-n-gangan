@@ -85,39 +85,40 @@ export function resolveTheme(theme) {
 
 const repoScore = (r) => Math.log2(1 + (r.stars || 0) * 4 + (r.commits || 0) + (r.size_kb || 0) / 200);
 
-// City layout depends only on the username + repos, so every theme shows
-// the same skyline: switching theme changes the look, not your city.
+// One tall tower per repository you own: public (named), private (no
+// name), forks and your profile repo too, so counting the towers gives your
+// repository count. Small houses with a roof and a door are only scenery.
+// Towers keep their left-to-right order (sorted by a hash of the repo), and
+// a tower's height comes from that repo's own size and stars.
+export const MAX_TOWERS = 36;
 export function layoutCity(data) {
-  const R = rng(hash('layout:' + data.username));
-  const slots = [];
-  let x = 8;
-  while (x < 884) {
-    const small = R() < 0.16;
-    const w = small ? 22 + R() * 10 : 26 + R() * 22;
-    const h = small ? 24 + R() * 18 : 48 + R() * 70;
-    slots.push({ x, w, h, small, antenna: !small && R() < 0.22, seed: R() });
-    x += w + (R() < 0.14 ? 14 : 3);
-  }
-  const tallSlots = slots.filter((s) => !s.small);
-  // Public repos first (they carry name signs), then private repos as
-  // unnamed towers in whatever reserved towers are left.
-  const pub = [...(data.repos || [])].filter((r) => !r.fork).sort((a, b) => repoScore(b) - repoScore(a));
-  const priv = [...(data.private_towers || [])].map((p) => ({ name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues }))
-    .sort((a, b) => repoScore(b) - repoScore(a));
-  const repos = [...pub, ...priv].slice(0, Math.min(12, tallSlots.length));
-  // The 12 widest towers are reserved for repos (so name signs fit). Each
-  // repo picks its tower from a hash of its own name, so it keeps the same
-  // building when you add, delete or hide other repos.
-  const reserved = [...tallSlots].sort((a, b) => b.w - a.w).slice(0, Math.min(12, tallSlots.length)).sort((a, b) => a.x - b.x);
-  for (const repo of repos) {
-    let k = hash('tower:' + repo.name) % reserved.length;
-    while (reserved[k].repo) k = (k + 1) % reserved.length;
-    const s = reserved[k];
-    s.repo = repo;
-    // Height from the repo's own size and stars (not relative to the others),
-    // capped so a billboard still fits above the tallest tower.
-    s.h = 100 + 40 * clamp(repoScore(repo) / 10, 0, 1);
-  }
+  const towers = [
+    ...(data.repos || []).map((r) => ({ key: 'pub:' + r.name, repo: r })),
+    ...(data.private_towers || []).map((p) => ({ key: 'priv:' + p.id, repo: { name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues } })),
+  ];
+  // Very busy accounts: keep the biggest repos.
+  const shown = towers.sort((a, b) => repoScore(b.repo) - repoScore(a.repo)).slice(0, MAX_TOWERS)
+    .sort((a, b) => hash('tower:' + a.key) - hash('tower:' + b.key));
+  const houses = clamp(Math.round((MAX_TOWERS - shown.length) / 5), 2, 7);
+  // Houses spread evenly between towers; each tower's width and each
+  // house's look come from its own hash, so adding or removing one repo only
+  // nudges the spacing and never reorders the skyline.
+  const row = shown.map((t) => ({ ...t, small: false }));
+  for (let k = houses - 1; k >= 0; k--) row.splice(Math.round(((k + 0.5) * shown.length) / houses), 0, { small: true, key: 'house:' + k });
+  const frac = (key) => (hash(key + ':' + data.username) % 1000) / 1000;
+  const gap = 4, avail = 876 - gap * (row.length - 1);
+  const weights = row.map((it) => (it.small ? 0.55 : 0.8 + frac('w:' + it.key) * 0.4));
+  const unit = Math.min(avail / weights.reduce((s, w) => s + w, 0), 64);
+  const used = weights.reduce((s, w) => s + w * unit, 0) + gap * (row.length - 1);
+  let x = 12 + (876 - used) / 2;
+  const slots = row.map((it, i) => {
+    const w = weights[i] * unit;
+    const s = it.small
+      ? { x, w: Math.min(w, 30), h: 24 + frac('h:' + it.key) * 16, small: true, seed: frac('s:' + it.key) }
+      : { x, w, h: 70 + 70 * clamp(repoScore(it.repo) / 10, 0, 1), small: false, repo: it.repo, seed: frac('s:' + it.key) };
+    x += w + gap;
+    return s;
+  });
   for (const s of slots) s.y = GY - s.h;
   return slots;
 }
@@ -125,7 +126,7 @@ export function layoutCity(data) {
 function fmt(tpl, d) {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => {
     const v = {
-      user: d.username, contributions: d.contributions, streak: d.streak, repos: d.repo_count, stars: d.stars_total,
+      user: d.username, contributions: d.contributions, streak: d.streak, repos: d.total_repos ?? d.repo_count, stars: d.stars_total,
       followers: d.followers, issues: d.issues, prs: d.prs, week: d.week, lang: d.languages?.[0]?.name?.toLowerCase() ?? 'code',
       year: d.year, month: d.month, last: d.days_since_last == null ? '?' : d.days_since_last === 0 ? 'today' : `${d.days_since_last}d ago`,
     }[k];

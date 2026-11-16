@@ -94,9 +94,9 @@ export async function fetchRaw(username, token, { includePrivate = true } = {}) 
       if (r) r.last_starred_at = n.stargazers?.edges?.[0]?.starredAt || null;
     }
   } catch { /* star dates are optional */ }
-  // Your profile repo (named like you) holds this city; it isn't a project,
-  // so it gets no tower and its commits stay off the billboard.
-  repos = repos.filter((r) => r.name.toLowerCase() !== username.toLowerCase());
+  // Your profile repo (named like you) holds this city. It still counts as
+  // one of your repos (it gets a tower), but no name sign and no billboard.
+  for (const r of repos) if (r.name.toLowerCase() === username.toLowerCase()) r.profile = true;
 
   // Private repos become unnamed towers. Each gets an opaque id (a hash of
   // its name) so it keeps the same building; the name itself is dropped.
@@ -125,7 +125,7 @@ export async function fetchRaw(username, token, { includePrivate = true } = {}) 
 
   // Latest commit messages from your most recently pushed repos.
   const recent_commits = [];
-  for (const r of repos.filter((r) => !r.fork).slice(0, 3)) {
+  for (const r of repos.filter((r) => !r.fork && !r.profile).slice(0, 3)) {
     try {
       const commits = await gh(`https://api.github.com/repos/${username}/${r.name}/commits?per_page=3&author=${username}`, token);
       for (const c of commits) recent_commits.push({ repo: r.name, at: c.commit.author?.date, msg: c.commit.message.split('\n')[0] });
@@ -158,7 +158,7 @@ export function derive(raw, { todayISO, learning = '' }) {
   if (i >= 0 && cal[i].count === 0) i--; // today not counted yet is fine
   for (; i >= 0 && cal[i].count > 0; i--) streak++;
   const lastActive = [...cal].reverse().find((d) => d.count > 0);
-  const own = (raw.repos || []).filter((r) => !r.fork);
+  const own = (raw.repos || []).filter((r) => !r.fork && !r.profile);
   const langs = {};
   for (const r of own) if (r.language) (langs[r.language] ||= { name: r.language, color: r.language_color, repos: 0 }).repos++;
   const month = new Date(todayISO + 'T12:00:00Z').getUTCMonth();
@@ -171,6 +171,9 @@ export function derive(raw, { todayISO, learning = '' }) {
     days_since_last: lastActive ? daysSince(lastActive.date + 'T12:00:00Z', today) : null,
     languages: Object.values(langs).sort((a, b) => b.repos - a.repos),
     repo_count: own.length,
+    // Every repository you own (public + private when the key allows), the
+    // same number as the towers.
+    total_repos: (raw.repos || []).length + (raw.private_towers || []).length,
     stars_total: own.reduce((s, r) => s + (r.stars || 0), 0),
     issues: own.reduce((s, r) => s + (r.open_issues || 0), 0),
     prs: own.reduce((s, r) => s + (r.open_prs || 0), 0),

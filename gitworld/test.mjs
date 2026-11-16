@@ -51,9 +51,14 @@ for (const [name, raw] of Object.entries(fixtures)) {
   const { layoutCity } = await import('./src/render.mjs');
   const repo = (name, size_kb) => ({ name, fork: false, stars: 0, size_kb, pushed_at: '2026-11-15T00:00:00Z' });
   const all = ['NL2SQL', 'AWS_Route53_Clone', 'AnimeRecommender', 'Floating-Timer', 'Everyday-Object-Catalog'].map((n, i) => repo(n, 500 + i * 400));
-  const where = (repos) => Object.fromEntries(layoutCity({ username: 'durvesh-n-gangan', repos }).filter((b) => b.repo).map((b) => [b.repo.name, b.x]));
-  const before = where(all), after = where(all.filter((r) => r.name !== 'AnimeRecommender'));
-  for (const [n, x] of Object.entries(after)) if (before[n] !== x) { fails++; console.error(`FAIL ${n} moved from x=${before[n]} to x=${x}`); }
+  // One tower per repo (counting towers = counting repos), and hiding a
+  // repo never reorders the others.
+  const order = (repos, priv = []) => layoutCity({ username: 'durvesh-n-gangan', repos, private_towers: priv }).filter((b) => !b.small).map((b) => b.repo.name);
+  const before = order(all), after = order(all.filter((r) => r.name !== 'AnimeRecommender'));
+  if (before.length !== all.length) { fails++; console.error(`FAIL expected ${all.length} towers, got ${before.length}`); }
+  if (after.join() !== before.filter((n) => n !== 'AnimeRecommender').join()) { fails++; console.error(`FAIL towers reordered: ${before} -> ${after}`); }
+  const fifteen = order([...all, repo('durvesh-n-gangan', 50)], Array.from({ length: 9 }, (_, i) => ({ id: 'p' + i, size_kb: 100 * i, stars: 0, open_issues: 0 })));
+  if (fifteen.length !== 15) { fails++; console.error(`FAIL 6 public + 9 private should give 15 towers, got ${fifteen.length}`); }
   const data = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [], repos: all,
     recent_commits: [{ repo: 'Floating-Timer', msg: 'License' }, { repo: 'AWS_Route53_Clone', msg: 'chore: tidy' }, { repo: 'Floating-Timer', msg: 'fix: drag' }] }, { todayISO: today });
   const svg = render(THEMES.find((t) => t.name === 'classic-blue'), data);
