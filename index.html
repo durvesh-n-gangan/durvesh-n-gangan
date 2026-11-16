@@ -3,72 +3,146 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GitWorld themes</title>
+<title>GitWorld city</title>
 <style>
-  :root { --bg: #0d1117; --panel: #161b22; --text: #e6edf3; --muted: #8b949e; --line: #30363d; --accent: #58a6ff; }
-  @media (prefers-color-scheme: light) { :root { --bg: #ffffff; --panel: #f6f8fa; --text: #1f2328; --muted: #59636e; --line: #d1d9e0; --accent: #0969da; } }
+  :root {
+    --bg: #0d1117; --panel: #161b22; --raised: #1c2128; --text: #e6edf3; --muted: #8b949e;
+    --line: #30363d; --accent: #58a6ff; --accent-bg: rgba(56, 139, 253, 0.15);
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #ffffff; --panel: #f6f8fa; --raised: #ffffff; --text: #1f2328; --muted: #59636e; --line: #d1d9e0; --accent: #0969da; --accent-bg: rgba(9, 105, 218, 0.1); }
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
-  main { max-width: 1000px; margin: 0 auto; padding: 32px 16px 48px; }
-  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
-  p { margin: 0 0 20px; color: var(--muted); }
-  .city { width: 100%; aspect-ratio: 900 / 260; display: block; border-radius: 12px; background: var(--panel); }
-  .name { margin: 12px 0 20px; font-size: 14px; color: var(--muted); }
-  .name b { color: var(--text); }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  button { font: inherit; font-size: 14px; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-  button:hover { border-color: var(--accent); }
-  button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-  a { color: var(--accent); }
-  footer { margin-top: 28px; font-size: 13px; color: var(--muted); }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 40px; }
+
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  header img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); }
+  header .who { font-weight: 600; font-size: 16px; }
+  header a.back { margin-left: auto; color: var(--muted); text-decoration: none; font-size: 13px; }
+  header a.back:hover { color: var(--accent); }
+
+  .stage { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); aspect-ratio: 900 / 260; }
+  .stage img { width: 100%; height: 100%; display: block; }
+  .stage button.nav { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--raised); color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; opacity: 0.85; }
+  .stage button.nav:hover { opacity: 1; border-color: var(--accent); }
+  .stage .prev { left: 10px; } .stage .next { right: 10px; }
+
+  .bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0 12px; }
+  .now { font-size: 18px; font-weight: 600; }
+  .tag { font-size: 12px; color: var(--accent); background: var(--accent-bg); border-radius: 999px; padding: 2px 10px; }
+  .reset { font: inherit; font-size: 13px; color: var(--accent); background: none; border: 0; cursor: pointer; padding: 0; }
+  .reset:hover { text-decoration: underline; }
+  .search { margin-left: auto; position: relative; }
+  .search input { font: inherit; width: 240px; max-width: 70vw; padding: 6px 10px 6px 30px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+  .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; fill: var(--muted); }
+
+  .strip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; padding: 4px 2px 12px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .card { flex: 0 0 188px; scroll-snap-align: start; text-align: left; font: inherit; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; padding: 6px; cursor: pointer; }
+  .card:hover { border-color: var(--muted); }
+  .card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .card img { width: 100%; aspect-ratio: 900 / 260; display: block; border-radius: 6px; background: var(--bg); }
+  .card span { display: block; padding: 6px 2px 2px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .empty { color: var(--muted); padding: 18px 2px; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  @media (max-width: 600px) { .card { flex-basis: 150px; } .search { margin-left: 0; width: 100%; } .search input { width: 100%; max-width: none; } }
 </style>
 </head>
 <body>
 <main>
-  <h1 id="title">GitWorld</h1>
-  <p>An animated city drawn from real GitHub activity. Pick a theme; your choice is remembered in this browser only.</p>
-  <img class="city" id="city" alt="">
-  <div class="name" id="name"></div>
-  <div class="chips" id="chips" role="group" aria-label="Themes"></div>
-  <footer><a id="back" href="https://github.com/">Back to the GitHub profile</a></footer>
+  <header>
+    <img id="avatar" alt="" hidden>
+    <span class="who" id="who">GitWorld</span>
+    <a class="back" id="back" href="https://github.com/">← Back to profile</a>
+  </header>
+
+  <div class="stage">
+    <img id="city" alt="">
+    <button class="nav prev" id="prev" aria-label="Previous theme">‹</button>
+    <button class="nav next" id="next" aria-label="Next theme">›</button>
+  </div>
+
+  <div class="bar">
+    <span class="now" id="now"></span>
+    <span class="tag" id="ownerTag" hidden>Owner's pick</span>
+    <button class="reset" id="reset" hidden>Back to the owner's pick</button>
+    <label class="search">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.68 11.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06ZM11.5 7a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Z"/></svg>
+      <input id="q" type="search" placeholder="Search themes" aria-label="Search themes" autocomplete="off">
+    </label>
+  </div>
+
+  <div class="strip" id="strip" role="group" aria-label="Themes"></div>
+  <div class="note">Trying a theme here changes nothing on the profile. It's just for you, and resets when you leave.</div>
 </main>
 <script>
-  const KEY = 'gitworld-theme';
-  const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
-  const save = (v) => { try { localStorage.setItem(KEY, v); } catch {} };
-
+  const $ = (id) => document.getElementById(id);
   fetch('assets/gitworld/themes.json', { cache: 'no-store' }).then((r) => r.json()).then((info) => {
-    const user = info.user || '';
-    if (user) {
-      document.getElementById('title').textContent = user + "'s GitWorld";
-      document.title = user + "'s GitWorld";
-      document.getElementById('back').href = 'https://github.com/' + user;
+    const themes = info.themes, owner = (info.live && info.live.dark) || themes[0].name;
+    const bust = '?d=' + encodeURIComponent(info.date || '');
+    const src = (n) => 'assets/gitworld/themes/' + n + '.svg' + bust;
+    if (info.user) {
+      $('who').textContent = info.user + "'s city";
+      document.title = info.user + "'s city";
+      $('back').href = 'https://github.com/' + info.user;
+      $('avatar').src = 'https://github.com/' + encodeURIComponent(info.user) + '.png?size=64';
+      $('avatar').hidden = false;
     }
-    const names = info.themes.map((t) => t.name);
-    const fromUrl = new URLSearchParams(location.search).get('theme');
-    let current = [fromUrl, read(), info.live && info.live.dark].find((n) => n && names.includes(n)) || names[0];
-    const chips = document.getElementById('chips');
-    const show = (name) => {
-      current = name;
-      const t = info.themes.find((x) => x.name === name);
-      const img = document.getElementById('city');
-      img.src = 'assets/gitworld/themes/' + name + '.svg?d=' + encodeURIComponent(info.date || '');
-      img.alt = t.label + ' city';
-      document.getElementById('name').innerHTML = 'Showing <b></b>' + (info.live && name === info.live.dark ? ' (the owner’s pick)' : '');
-      document.querySelector('#name b').textContent = t.label;
-      for (const b of chips.children) b.setAttribute('aria-pressed', String(b.dataset.name === name));
-    };
-    for (const t of info.themes) {
+    // Owner's pick first, then the rest.
+    const order = [themes.find((t) => t.name === owner), ...themes.filter((t) => t.name !== owner)].filter(Boolean);
+    let current = owner;
+
+    const cards = order.map((t) => {
       const b = document.createElement('button');
-      b.textContent = t.label;
-      b.dataset.name = t.name;
-      b.addEventListener('click', () => { save(t.name); show(t.name); });
-      chips.appendChild(b);
+      b.className = 'card'; b.dataset.name = t.name; b.dataset.search = (t.label + ' ' + t.name).toLowerCase();
+      const img = document.createElement('img'); img.loading = 'lazy'; img.alt = ''; img.src = src(t.name);
+      const label = document.createElement('span'); label.textContent = t.label;
+      b.append(img, label);
+      b.addEventListener('click', () => show(t.name, true));
+      $('strip').appendChild(b);
+      return b;
+    });
+    const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'No theme matches that.'; empty.hidden = true;
+    $('strip').appendChild(empty);
+
+    function show(name, fromCard) {
+      current = name;
+      const t = themes.find((x) => x.name === name);
+      $('city').src = src(name); $('city').alt = t.label + ' city';
+      $('now').textContent = t.label;
+      $('ownerTag').hidden = name !== owner;
+      $('reset').hidden = name === owner;
+      for (const c of cards) c.setAttribute('aria-pressed', String(c.dataset.name === name));
+      const card = cards.find((c) => c.dataset.name === name);
+      if (card && !fromCard) card.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
     }
-    show(current);
-  }).catch(() => {
-    document.getElementById('name').textContent = 'Could not load the themes. Try refreshing.';
-  });
+    const visible = () => cards.filter((c) => !c.hidden);
+    function step(d) {
+      const list = visible().length ? visible() : cards;
+      const i = list.findIndex((c) => c.dataset.name === current);
+      show(list[(i + d + list.length) % list.length].dataset.name);
+    }
+    $('prev').onclick = () => step(-1);
+    $('next').onclick = () => step(1);
+    $('reset').onclick = () => show(owner);
+    $('q').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      for (const c of cards) c.hidden = !!q && !c.dataset.search.includes(q);
+      empty.hidden = visible().length > 0;
+      const first = visible()[0];
+      if (q && first) show(first.dataset.name);
+    });
+    $('q').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.target.value = ''; e.target.dispatchEvent(new Event('input')); } });
+    document.addEventListener('keydown', (e) => {
+      if (e.target === $('q')) return;
+      if (e.key === 'ArrowRight') step(1);
+      if (e.key === 'ArrowLeft') step(-1);
+    });
+    show(owner);
+  }).catch(() => { $('now').textContent = 'Could not load the themes. Try refreshing.'; });
 </script>
 </body>
 </html>

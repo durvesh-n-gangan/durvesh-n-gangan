@@ -78,24 +78,6 @@ const md = ['# GitWorld themes', '', `Every theme below is drawn from the same d
 for (const t of THEMES) md.push(`### ${t.label}`, '', `\`"theme": "${t.name}"\``, '', `<img src="./${rel}/themes/${t.name}.svg" alt="${t.label} GitWorld city" width="100%">`, '');
 writeFileSync(join(root, 'THEMES.md'), md.join('\n'));
 
-// README theme switcher: visitors open "Switch theme" and unfold any city.
-// Only the text between the two marker comments is replaced.
-const readmePath = join(root, 'README.md');
-if (existsSync(readmePath)) {
-  const readme = readFileSync(readmePath, 'utf8');
-  const start = readme.match(/<!-- gitworld:switcher[^>]*-->/), end = '<!-- /gitworld:switcher -->';
-  if (start && readme.includes(end)) {
-    const order = [pick.dark, ...THEMES.map((t) => t.name).filter((n) => n !== pick.dark)];
-    const label = (n) => THEMES.find((t) => t.name === n).label;
-    const page = cfg.switcher_page ? `https://${data.username.toLowerCase()}.github.io/${data.username}/` : '';
-    const block = [start[0], '<details>', '<summary><b>Switch theme</b> · open, then click any theme to see my city in it</summary>', '',
-      ...order.map((n) => `<details><summary>${label(n)}${n === pick.dark ? ' (showing now)' : ''}</summary>\n\n<img src="./${rel}/themes/${n}.svg" alt="${label(n)} city" width="100%">\n\n</details>`),
-      '', page ? `<sub>Or open the <a href="${page}">theme switcher page</a>, which remembers your pick.</sub>` : '', '</details>', end].join('\n');
-    const next = readme.slice(0, start.index) + block + readme.slice(readme.indexOf(end) + end.length);
-    if (next !== readme) writeFileSync(readmePath, next);
-  }
-}
-
 console.log(`${useDemo ? 'demo data' : '@' + data.username} · ${today} · live: dark=${pick.dark}, light=${pick.light} (${pick.reason})`);
 console.log(`rendered ${Object.keys(rendered).length}/${THEMES.length} themes into ${out}`);
 if (failures.length) fail('FAILED:\n  ' + failures.join('\n  '));

@@ -4,7 +4,7 @@
 // Label placeholders: {user} {contributions} {streak} {repos} {stars}
 // {followers} {issues} {prs} {week} {lang} {year} {month} {last}
 
-const NEON = ['#ff4fd8', '#36e2ff', '#ffd36b', '#7ee787', '#ff7b72', '#a371f7'];
+const NEON = ['#ff4fd8', '#36e2ff', '#ffd36b', '#7ee787', '#ffa657', '#a371f7'];
 
 export const THEMES = [
   // ------------------------------------------------------------ originals

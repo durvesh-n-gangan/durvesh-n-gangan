@@ -242,7 +242,7 @@ export const FEATURES = {
     layer: 'mid',
     // Neon signs with your real repo names on the landmark towers.
     draw(ctx, o = {}) {
-      const { colors = ['#ff4fd8', '#36e2ff', '#ffd36b', '#7ee787', '#ff7b72', '#a371f7'], bg = '#05060c' } = o;
+      const { colors = ['#ff4fd8', '#36e2ff', '#ffd36b', '#7ee787', '#ffa657', '#a371f7'], bg = '#05060c', issue = '#ff6b6b' } = o;
       const bb = hasFeature(ctx, 'billboard') ? billboardRect(ctx) : null;
       let s = '', i = 0;
       for (const b of landmarks(ctx)) {
@@ -251,12 +251,21 @@ export const FEATURES = {
         if (max < 4) continue;
         let name = b.repo.name;
         if (name.length > max) name = name.slice(0, max - 1) + '…';
-        const w = textW(name) + 10, x = b.x + b.w / 2 - w / 2, y = b.y + 12, c = colors[i % colors.length];
+        const w = textW(name) + 10, x = clamp(b.x + b.w / 2 - w / 2, 6, 894 - w), y = b.y + 12, c = colors[i % colors.length];
         if (bb && x < bb.x + bb.width && x + w > bb.x && y < bb.y + 40) continue;
         i++;
         s += E('g', { style: anim('neon', 3 + (i % 4) * 0.9, { delay: i }) },
           E('rect', { x, y, width: w, height: 16, rx: 3, fill: bg, stroke: c, 'stroke-width': 1.5 }) +
           E('text', { x: x + w / 2, y: y + 12, 'text-anchor': 'middle', 'font-family': MONO, 'font-size': 11, fill: c }, esc(name)));
+        // Open issues on this repo: a red tag under its name (matches the
+        // blinking beacon on the roof).
+        const n = b.repo.open_issues || 0;
+        if (n > 0) {
+          const label = `${n} open issue${n === 1 ? '' : 's'}`, lw = textW(label, 10) + 10;
+          const lx = clamp(b.x + b.w / 2 - lw / 2, 6, 894 - lw);
+          s += E('rect', { x: lx, y: y + 19, width: lw, height: 14, rx: 3, fill: bg, stroke: issue, 'stroke-width': 1 }) +
+            E('text', { x: lx + lw / 2, y: y + 29.5, 'text-anchor': 'middle', 'font-family': MONO, 'font-size': 10, fill: issue }, label);
+        }
       }
       return s;
     },
