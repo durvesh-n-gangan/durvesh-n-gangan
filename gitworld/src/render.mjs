@@ -85,37 +85,31 @@ export function resolveTheme(theme) {
 
 const repoScore = (r) => Math.log2(1 + (r.stars || 0) * 4 + (r.commits || 0) + (r.size_kb || 0) / 200);
 
-// One tall tower per repository you own: public (named), private (no
-// name), forks and your profile repo too, so counting the towers gives your
-// repository count. Small houses with a roof and a door are only scenery.
-// Towers keep their left-to-right order (sorted by a hash of the repo), and
-// a tower's height comes from that repo's own size and stars.
-export const MAX_TOWERS = 36;
+// One tower per repository you own (public with a name sign, private and
+// your profile repo without), and nothing else on the street, so counting
+// the towers gives your repository count. Towers keep their left-to-right
+// order (sorted by a hash of the repo), and a tower's height comes from that
+// repo's own size and stars.
+export const MAX_TOWERS = 60; // more than this can't fit in 900px
 export function layoutCity(data) {
   const towers = [
     ...(data.repos || []).map((r) => ({ key: 'pub:' + r.name, repo: r })),
     ...(data.private_towers || []).map((p) => ({ key: 'priv:' + p.id, repo: { name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues } })),
   ];
-  // Very busy accounts: keep the biggest repos.
   const shown = towers.sort((a, b) => repoScore(b.repo) - repoScore(a.repo)).slice(0, MAX_TOWERS)
     .sort((a, b) => hash('tower:' + a.key) - hash('tower:' + b.key));
-  const houses = clamp(Math.round((MAX_TOWERS - shown.length) / 5), 2, 7);
-  // Houses spread evenly between towers; each tower's width and each
-  // house's look come from its own hash, so adding or removing one repo only
-  // nudges the spacing and never reorders the skyline.
-  const row = shown.map((t) => ({ ...t, small: false }));
-  for (let k = houses - 1; k >= 0; k--) row.splice(Math.round(((k + 0.5) * shown.length) / houses), 0, { small: true, key: 'house:' + k });
+  if (!shown.length) return [];
+  // Each tower's width comes from its own hash, so adding or removing a repo
+  // only nudges the spacing and never reorders the skyline.
   const frac = (key) => (hash(key + ':' + data.username) % 1000) / 1000;
-  const gap = 4, avail = 876 - gap * (row.length - 1);
-  const weights = row.map((it) => (it.small ? 0.55 : 0.8 + frac('w:' + it.key) * 0.4));
-  const unit = Math.min(avail / weights.reduce((s, w) => s + w, 0), 64);
-  const used = weights.reduce((s, w) => s + w * unit, 0) + gap * (row.length - 1);
+  const gap = shown.length > 40 ? 2 : 4, avail = 876 - gap * (shown.length - 1);
+  const weights = shown.map((it) => 0.8 + frac('w:' + it.key) * 0.4);
+  const unit = Math.min(avail / weights.reduce((s, w) => s + w, 0), 80);
+  const used = weights.reduce((s, w) => s + w * unit, 0) + gap * (shown.length - 1);
   let x = 12 + (876 - used) / 2;
-  const slots = row.map((it, i) => {
+  const slots = shown.map((it, i) => {
     const w = weights[i] * unit;
-    const s = it.small
-      ? { x, w: Math.min(w, 30), h: 24 + frac('h:' + it.key) * 16, small: true, seed: frac('s:' + it.key) }
-      : { x, w, h: 70 + 70 * clamp(repoScore(it.repo) / 10, 0, 1), small: false, repo: it.repo, seed: frac('s:' + it.key) };
+    const s = { x, w, h: 70 + 70 * clamp(repoScore(it.repo) / 10, 0, 1), small: false, repo: it.repo, seed: frac('s:' + it.key) };
     x += w + gap;
     return s;
   });

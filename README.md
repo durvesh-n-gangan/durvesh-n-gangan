@@ -13,10 +13,9 @@
 <details>
 <summary>How this city works</summary>
 
-- Every tall tower is one of my repositories, so counting the towers gives my repository count. Public repos have a name sign; private repos (and this profile repo) have none. Bigger and more-starred repos are taller.
+- Every building is one of my repositories, so counting the buildings gives my repository count. Public repos have a name sign; private repos and this profile repo have none. Bigger and more-starred repos are taller.
 - The more I've contributed in the last 7 days, the more windows are lit.
 - An antenna with a blinking light on a tower means that repo has open issues. The more issues, the faster it blinks. No antenna means no open issues.
-- The small houses with a door are just scenery.
 - The little creatures on the street are open issues as well.
 - In some themes, a billboard stands on the repo I committed to most recently and scrolls its latest commit messages.
 - The city is redrawn every hour from my GitHub activity.

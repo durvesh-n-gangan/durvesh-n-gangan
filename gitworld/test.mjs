@@ -53,12 +53,21 @@ for (const [name, raw] of Object.entries(fixtures)) {
   const all = ['NL2SQL', 'AWS_Route53_Clone', 'AnimeRecommender', 'Floating-Timer', 'Everyday-Object-Catalog'].map((n, i) => repo(n, 500 + i * 400));
   // One tower per repo (counting towers = counting repos), and hiding a
   // repo never reorders the others.
-  const order = (repos, priv = []) => layoutCity({ username: 'durvesh-n-gangan', repos, private_towers: priv }).filter((b) => !b.small).map((b) => b.repo.name);
+  const layout = (repos, priv = []) => layoutCity({ username: 'durvesh-n-gangan', repos, private_towers: priv });
+  const order = (repos, priv = []) => layout(repos, priv).map((b) => b.repo.name);
   const before = order(all), after = order(all.filter((r) => r.name !== 'AnimeRecommender'));
   if (before.length !== all.length) { fails++; console.error(`FAIL expected ${all.length} towers, got ${before.length}`); }
   if (after.join() !== before.filter((n) => n !== 'AnimeRecommender').join()) { fails++; console.error(`FAIL towers reordered: ${before} -> ${after}`); }
   const fifteen = order([...all, repo('durvesh-n-gangan', 50)], Array.from({ length: 9 }, (_, i) => ({ id: 'p' + i, size_kb: 100 * i, stars: 0, open_issues: 0 })));
   if (fifteen.length !== 15) { fails++; console.error(`FAIL 6 public + 9 private should give 15 towers, got ${fifteen.length}`); }
+  if (layout(all).some((b) => b.small)) { fails++; console.error('FAIL the street should have towers only, no houses'); }
+  for (const n of [0, 1, 7, 15, 33, 60]) {
+    const got = layout(Array.from({ length: n }, (_, i) => repo('r' + i, 100 * i))).length;
+    if (got !== n) { fails++; console.error(`FAIL ${n} repos gave ${got} towers`); }
+  }
+  // The profile repo is a tower but never gets a name sign.
+  const withProfile = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [], repos: [...all, { ...repo('durvesh-n-gangan', 300), profile: true }], recent_commits: [] }, { todayISO: today });
+  for (const t of THEMES) if (/>durvesh-n[^<&'@]*</.test(render(t, withProfile).replace(/<title>[\s\S]*?<\/title>/, ''))) { fails++; console.error(`FAIL ${t.name}: profile repo got a name sign`); }
   const data = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [], repos: all,
     recent_commits: [{ repo: 'Floating-Timer', msg: 'License' }, { repo: 'AWS_Route53_Clone', msg: 'chore: tidy' }, { repo: 'Floating-Timer', msg: 'fix: drag' }] }, { todayISO: today });
   const svg = render(THEMES.find((t) => t.name === 'classic-blue'), data);

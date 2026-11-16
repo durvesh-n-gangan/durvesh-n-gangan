@@ -199,7 +199,7 @@ export const THEMES = [
     name: 'desert-oasis', label: 'Desert oasis', mode: 'light',
     sky: ['#ffd9a0', '#ffc98a', '#ffb77a', '#ffa46e', '#f79066'], far: '#e8a06a',
     buildings: ['#d9a066', '#c98f5a', '#e0b07a'], win: ['#5a3a2a', '#3b6e8f'], lit: 0.5, dwin: '#b07a48',
-    smallRoof: 'dome', domeColor: '#2f8f9d', antenna: '#7a4e2c', beacon: '#d62828', hero: '#5a3a2a', monster: '#7a4e2c', lane: '#fff3d6',
+    smallRoof: 'dome', domeColor: '#2f8f9d', topDome: '#2f8f9d', antenna: '#7a4e2c', beacon: '#d62828', hero: '#5a3a2a', monster: '#7a4e2c', lane: '#fff3d6',
     ground: { type: 'dunes' },
     features: [['sun', { x: 760, y: 70, r: 30, color: '#fff1c9', glow: 0.3 }], 'palms', ['signs', { colors: ['#7a4e2c', '#2f6f7d'], bg: '#fff3d6', issue: '#c0392b' }]],
     pill: { bg: '#fff3d6', fg: '#7a4e2c' }, right: 'oasis · {stars} stars collected',

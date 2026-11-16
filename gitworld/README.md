@@ -39,7 +39,7 @@ Nothing is made up: if the data isn't there, that detail is left out.
 
 | In the city | Comes from |
 | --- | --- |
-| Tall towers | One per repository you own: public ones named, private ones (with the `GITWORLD_TOKEN` key) unnamed. Height = size + stars. Small houses are scenery |
+| Buildings | Exactly one per repository you own (up to 60): public ones named, private ones (with the `GITWORLD_TOKEN` key) and the profile repo unnamed. Height = size + stars. Nothing else stands on the street |
 | Repo name signs (classic-blue, neon-rain, cyberpunk) | Those same repos' names |
 | Tower colors (synthwave) | Each repo's main language |
 | How many windows are lit | Contributions in the last 7 days (more activity, brighter city) |

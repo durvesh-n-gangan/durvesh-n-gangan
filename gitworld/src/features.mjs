@@ -301,8 +301,11 @@ export const FEATURES = {
     draw(ctx, o = {}) {
       const { color = '#c8d3e6', chimney = '#3b4f7c' } = o;
       let s = '';
-      ctx.city.filter((b) => b.small).forEach((b, i) => {
-        const cx = b.x + b.w - 7;
+      // A chimney on about every fourth rooftop (towers only, so the street
+      // still has one building per repo).
+      const roofs = spread(tall(ctx), Math.max(1, Math.round(tall(ctx).length / 4)));
+      roofs.forEach((b, i) => {
+        const cx = b.x + b.w - 8;
         s += E('rect', { x: cx - 3, y: b.y - 12, width: 6, height: 9, fill: chimney });
         for (let p = 0; p < 3; p++) s += E('circle', { cx, cy: b.y - 15, r: 4, fill: color, class: 'fb', style: anim('puff', 3, { timing: 'ease-out', delay: p + i * 0.3 }) });
       });
