@@ -2,9 +2,13 @@
   "username": "durvesh-n-gangan",
   "theme": "winter-night",
   "light_theme": "github-light",
-  "auto": { "festivals": true, "seasons": false },
+  "auto": {
+    "festivals": true,
+    "seasons": false
+  },
   "rotate_list": [],
   "timezone": "Asia/Kolkata",
   "learning": "",
-  "output_dir": "assets/gitworld"
+  "output_dir": "assets/gitworld",
+  "switcher_page": true
 }

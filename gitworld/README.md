@@ -27,7 +27,7 @@ The workflow's built-in token can't read every detail of your other repos (open 
 | Festival themes on their dates | `"auto": { "festivals": true }` (Diwali, Holi, New Year, Halloween) |
 | Season themes | `"auto": { "seasons": true }` (winter, sakura spring, autumn) |
 
-Browse every theme in [THEMES.md](../THEMES.md), or open `gallery.html` locally.
+Visitors can open **Switch theme** under the city to see any theme. With GitHub Pages on (Settings → Pages → Deploy from a branch → main, root) and `"switcher_page": true`, the fold also links to `index.html`, a page where visitors switch themes instantly and their pick is remembered in their browser.
 
 ## Themes
 
