@@ -33,10 +33,18 @@ const override = opt('--theme') || process.env.GITWORLD_THEME || '';
 // Username: the config value, or (inside GitHub Actions) the repo owner,
 // which for a profile repo is you. CI never falls back to sample data.
 const inCI = !!process.env.GITHUB_ACTIONS;
+// Inside GitHub Actions, "::error::" lines show up on the run's summary page,
+// so a failed run says why without digging through the logs.
+const fail = (msg) => {
+  console.error(inCI ? `::error title=GitWorld::${String(msg).replace(/\r?\n/g, '%0A')}` : msg);
+  process.exit(1);
+};
+process.on('uncaughtException', (e) => fail(e.message));
+process.on('unhandledRejection', (e) => fail(e?.message || e));
 const cfgUser = cfg.username && cfg.username !== 'YOUR_GITHUB_USERNAME' ? cfg.username : '';
 const username = cfgUser || (inCI ? process.env.GITHUB_REPOSITORY_OWNER || '' : '');
 const useDemo = flag('--demo') || (!username && !inCI);
-if (!useDemo && !username) { console.error('No username: set "username" in gitworld.config.json.'); process.exit(1); }
+if (!useDemo && !username) fail('No username: set "username" in gitworld.config.json.');
 
 const raw = useDemo ? demoRaw(today) : await fetchRaw(username, process.env.GITHUB_TOKEN);
 const data = derive(raw, { todayISO: today, learning: cfg.learning || '' });
@@ -72,4 +80,4 @@ writeFileSync(join(root, 'THEMES.md'), md.join('\n'));
 
 console.log(`${useDemo ? 'demo data' : '@' + data.username} · ${today} · live: dark=${pick.dark}, light=${pick.light} (${pick.reason})`);
 console.log(`rendered ${Object.keys(rendered).length}/${THEMES.length} themes into ${out}`);
-if (failures.length) { console.error('FAILED:\n  ' + failures.join('\n  ')); process.exit(1); }
+if (failures.length) fail('FAILED:\n  ' + failures.join('\n  '));
