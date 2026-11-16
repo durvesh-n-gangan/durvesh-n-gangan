@@ -228,12 +228,14 @@ export function render(themeIn, data) {
       }
       if (t.topDome && R() < 0.4) p.push(E('path', { d: `M${r1(b.x + 2)} ${r1(b.y)}a${r1(b.w / 2 - 2)} ${r1(b.w / 2 - 2)} 0 0 1 ${r1(b.w - 4)} 0z`, fill: t.topDome, opacity: 0.4 }));
       // An antenna with a blinking light (in the theme's beacon colour) means
-      // exactly one thing: this repo has open issues. The tag under its name
-      // sign says what they are. No issues, no antenna.
-      if (b.repo?.open_issues > 0) {
-        const cx = b.x + b.w / 2;
+      // exactly one thing: this repo has open issues. More issues, faster
+      // blink: 1 issue every 1.6s, down to 0.4s at 6 or more. No issues, no
+      // antenna.
+      const issues = b.repo?.open_issues || 0;
+      if (issues > 0) {
+        const cx = b.x + b.w / 2, speed = r1(Math.max(0.4, 1.6 - (Math.min(issues, 6) - 1) * 0.24));
         p.push(E('line', { x1: cx, y1: b.y, x2: cx, y2: b.y - 14, stroke: t.antenna, 'stroke-width': 1.5 }) +
-          E('circle', { cx, cy: b.y - 15, r: 2.2, fill: t.beacon, class: 'tw beacon', style: `animation-duration:1.4s;animation-delay:-${r1((b.x % 13) / 10)}s` }));
+          E('circle', { cx, cy: b.y - 15, r: 2.4, fill: t.beacon, class: 'tw beacon', style: `animation-duration:${speed}s` }));
       }
     } else {
       const door = t.windowMode === 'contrib' ? t.win[1] : t.win[0];

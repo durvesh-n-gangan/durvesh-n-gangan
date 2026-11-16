@@ -166,7 +166,7 @@ export const THEMES = [
     hero: '#ffd166', monster: '#e8e0ff', monsterStyle: 'ghost', lane: '#ff9a1f',
     ground: { type: 'road', base: '#140a1f', road: '#2a1d33' },
     features: [['moon', { x: 720, y: 60, r: 22, color: '#ffb347', phase: false }], 'pumpkins', 'bats', ['signs', { colors: ['#ffb347', '#a6ff4d', '#ffd166'], bg: '#0d0618' }]],
-    pill: { bg: '#0d0618', fg: '#ffb347' }, right: 'ghosts = open issues ({issues})',
+    pill: { bg: '#0d0618', fg: '#ffb347' }, right: 'spooky season · {repos} repos',
   },
   {
     name: 'new-year', label: 'New Year', mode: 'dark',
