@@ -1,7 +1,7 @@
 <a href="https://durvesh-n-gangan.github.io/durvesh-n-gangan/">
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="./assets/gitworld/live/gitworld-light-81b156e4c0.svg">
-  <img alt="My GitWorld: an animated city built from my GitHub activity. Click to try other themes." src="./assets/gitworld/live/gitworld-dark-81b156e4c0.svg" width="100%">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/gitworld/live/gitworld-light-db1c1f3e00.svg">
+  <img alt="My GitWorld: an animated city built from my GitHub activity. Click to try other themes." src="./assets/gitworld/live/gitworld-dark-db1c1f3e00.svg" width="100%">
 </picture>
 </a>
 <p align="right"><sub>Click the city to try other themes</sub></p>
