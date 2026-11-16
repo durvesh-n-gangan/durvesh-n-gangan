@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       theme:
-        description: "Pick a theme. It stays until you pick another."
+        description: "Pick a theme. It stays until you pick another (Diwali, Holi, Halloween and New Year still get their festival theme for a few days)."
         type: choice
         default: keep-current
         options:
@@ -44,7 +44,7 @@ permissions:
 
 concurrency:
   group: gitworld
-  cancel-in-progress: true
+  cancel-in-progress: false # never cancel a run that is saving your theme choice
 
 jobs:
   build:
@@ -75,4 +75,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/gitworld THEMES.md gitworld.config.json
           git diff --cached --quiet || git commit -m "chore: redraw gitworld city"
+          # main may have moved while drawing (e.g. you edited the README); catch up, then push
+          git pull --rebase -X theirs || true
           git push
