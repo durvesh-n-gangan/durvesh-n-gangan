@@ -31,26 +31,59 @@ async function gh(url, token, body) {
   return res.json();
 }
 
+// Colors GitHub uses for common languages, for when only the REST API answers.
+const LANG_COLORS = {
+  JavaScript: '#f1e05a', TypeScript: '#3178c6', Python: '#3572A5', Java: '#b07219', 'C++': '#f34b7d', C: '#555555',
+  'C#': '#178600', Go: '#00ADD8', Rust: '#dea584', HTML: '#e34c26', CSS: '#663399', 'Jupyter Notebook': '#DA5B0B',
+  Shell: '#89e051', Kotlin: '#A97BFF', Swift: '#F05138', Dart: '#00B4AB', Ruby: '#701516', PHP: '#4F5D95', SCSS: '#c6538c', Vue: '#41b883',
+};
+
+const warn = (msg) => console.warn(process.env.GITHUB_ACTIONS ? `::warning title=GitWorld::${msg}` : `warning: ${msg}`);
+
+// The workflow's built-in token may not read every detail of your other
+// repos. GraphQL then returns what it can and marks the rest as errors, so
+// keep the partial answer, fill gaps from the public REST API, and leave out
+// anything still unknown (the city simply skips that detail).
 export async function fetchRaw(username, token) {
   if (!token) throw new Error('GITHUB_TOKEN is not set. Use --demo to render with sample data.');
   const json = await gh('https://api.github.com/graphql', token, { query: QUERY, variables: { login: username } });
-  if (json.errors) throw new Error('GraphQL: ' + json.errors.map((e) => e.message).join('; '));
-  const u = json.data.user;
+  const u = json.data?.user;
+  if (json.errors?.length) {
+    const where = [...new Set(json.errors.map((e) => (e.path || []).filter((p) => typeof p === 'string').slice(1).join('.') || e.message))];
+    if (!u) throw new Error('GraphQL: ' + json.errors.map((e) => e.message).join('; '));
+    warn(`some details could not be read with this token and were left out: ${where.join(', ')}`);
+  }
   if (!u) throw new Error(`GitHub user "${username}" not found`);
-  const repos = u.repositories.nodes.map((r) => ({
+
+  let repos = (u.repositories?.nodes || []).filter(Boolean).map((r) => ({
     name: r.name,
     fork: r.isFork,
-    stars: r.stargazerCount,
+    stars: r.stargazerCount ?? 0,
     size_kb: r.diskUsage || 0,
     pushed_at: r.pushedAt,
     language: r.primaryLanguage?.name || null,
     language_color: r.primaryLanguage?.color || null,
-    open_issues: r.issues.totalCount,
-    open_prs: r.pullRequests.totalCount,
-    last_release_at: r.releases.nodes[0]?.publishedAt || null,
-    last_starred_at: r.stargazers.edges[0]?.starredAt || null,
+    open_issues: r.issues?.totalCount ?? null,
+    open_prs: r.pullRequests?.totalCount ?? null,
+    last_release_at: r.releases?.nodes?.[0]?.publishedAt || null,
+    last_starred_at: r.stargazers?.edges?.[0]?.starredAt || null,
   }));
-  const calendar = u.contributionsCollection.contributionCalendar.weeks.flatMap((w) =>
+  if (!u.repositories) {
+    const rest = await gh(`https://api.github.com/users/${username}/repos?type=owner&sort=pushed&per_page=100`, token);
+    repos = rest.map((r) => ({
+      name: r.name, fork: r.fork, stars: r.stargazers_count, size_kb: r.size || 0, pushed_at: r.pushed_at,
+      language: r.language || null, language_color: LANG_COLORS[r.language] || (r.language ? '#8b949e' : null),
+      open_issues: null, open_prs: null, last_release_at: null, last_starred_at: null,
+    }));
+  }
+
+  let followers = u.followers?.totalCount ?? null;
+  if (followers == null) {
+    try { followers = (await gh(`https://api.github.com/users/${username}`, token)).followers ?? null; } catch { /* leave unknown */ }
+  }
+
+  const cc = u.contributionsCollection?.contributionCalendar;
+  const calendar = (cc?.weeks || []).flatMap((w) =>
     w.contributionDays.map((d) => ({ date: d.date, count: d.contributionCount, level: LEVEL[d.contributionLevel] ?? 0 })));
 
   // Latest commit messages from your most recently pushed repos.
@@ -65,8 +98,8 @@ export async function fetchRaw(username, token) {
 
   return {
     username: u.login,
-    followers: u.followers.totalCount,
-    contributions: u.contributionsCollection.contributionCalendar.totalContributions,
+    followers,
+    contributions: cc?.totalContributions ?? 0,
     calendar,
     repos,
     recent_commits: recent_commits.map((c) => c.msg),

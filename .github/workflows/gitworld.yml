@@ -56,7 +56,7 @@ jobs:
           node-version: 22
       - name: Draw the city
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITWORLD_TOKEN || secrets.GITHUB_TOKEN }}
           GITWORLD_THEME: ${{ github.event.inputs.theme != 'config' && github.event.inputs.theme || '' }}
         run: node gitworld/generate.mjs
       - name: Save the new images

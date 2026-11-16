@@ -11,6 +11,10 @@ Everything is one script: `generate.mjs` plus the files in `src/`. No packages t
 4. On GitHub, go to the repo's **Settings → Actions → General → Workflow permissions** and choose **Read and write permissions**, so the workflow can save the images.
 5. Open the **Actions** tab, pick **GitWorld city**, and click **Run workflow**. From then on it redraws itself every day.
 
+### Optional: full details
+
+The workflow's built-in token can't read every detail of your other repos (open issues, pull requests, release and star dates). Those parts of the city are simply left out. To include them, create a fine-grained token at **Settings → Developer settings → Personal access tokens** with read-only access to your public repos, then add it to this repo under **Settings → Secrets and variables → Actions** as `GITWORLD_TOKEN`.
+
 ## Switch themes
 
 | What you want | How |
