@@ -59,6 +59,8 @@ export const THEMES = [
     name: 'pastel-day', label: 'Pastel day', mode: 'light',
     sky: ['#9bd3ff', '#a8d9ff', '#b6dfff', '#c4e6ff', '#d3ecff'], far: '#c2dcf2',
     buildings: ['#ffc2d1', '#ffe59a', '#c5f2d2', '#d6c4ff', '#9cc3ff', '#ffd3b0'], win: ['#ffffff', '#e6f4ff'], beacon: '#ff6b9a', lit: 0.55, dwin: '#c9d3e6',
+    // Day-window intensity (1, 2-3, 4-6, 7+ commits): sunny yellow to orange.
+    levels: ['#ffd36b', '#ffb938', '#ff9b1f', '#f3722c'],
     hero: '#2b2140', monster: '#ff6b6b', antenna: '#6b7280',
     ground: { type: 'road', base: '#8fd18a', road: '#7b8494' },
     features: [['sun', { x: 120, y: 50 }], ['clouds', { count: 3, speed: 70 }], ['birds', { color: '#2b2140', y: 84 }], 'blimp', ['signs', { colors: ['#2b2140', '#6b4fa0', '#2f6f9f'], bg: '#ffffff', issue: '#cf222e' }]],

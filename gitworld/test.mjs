@@ -117,8 +117,8 @@ for (const [name, raw] of Object.entries(fixtures)) {
     const d = derive(raw, { todayISO: today });
     if (JSON.stringify(raw).includes('SECRET')) { fails++; console.error('FAIL private repo name kept in fetched data'); }
     if (raw.private_towers.length !== 2) { fails++; console.error('FAIL expected 2 private towers'); }
-    if (d.private_towers.find((p) => p.size_kb === 5000)?.months?.[11] !== 7) { fails++; console.error('FAIL private repo history should count 7 commits this month'); }
-    if (d.repos.find((r) => r.name === 'NL2SQL')?.months?.[11] !== 2) { fails++; console.error('FAIL public repo history should count 2 commits this month'); }
+    if (d.private_towers.find((p) => p.size_kb === 5000)?.day_counts?.[today] !== 7) { fails++; console.error('FAIL private repo history should count 7 commits today'); }
+    if (d.repos.find((r) => r.name === 'NL2SQL')?.day_counts?.[today] !== 2) { fails++; console.error('FAIL public repo history should count 2 commits today'); }
     if (d.repo_count !== 2) { fails++; console.error('FAIL repo count should only include public repos'); }
     for (const t of THEMES) {
       const svg = render(t, d);
@@ -142,31 +142,26 @@ for (const [name, raw] of Object.entries(fixtures)) {
   console.log(`windows by recency: today ${fresh} lit, a month ago ${month}, over a year ${old}`);
 }
 
-// Floors are months: recent commits light the top, old ones the bottom.
+// Windows are days: the top-right window is today, each lit window is a day
+// with commits, and more commits that day = a stronger colour.
 {
-  const t = THEMES.find((x) => x.name === 'classic-blue');
   const { layoutCity } = await import('./src/render.mjs');
-  const mk = (month) => derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [],
-    repos: [{ name: 'solo', fork: false, stars: 0, size_kb: 90000, pushed_at: '2026-01-01T00:00:00Z',
-      commit_days: Array.from({ length: 10 }, (_, k) => [month + '-' + String(k + 10).padStart(2, '0'), 5]) }], recent_commits: [] }, { todayISO: today });
-  const halves = (d) => {
-    const svg = render(t, d), b = layoutCity(d)[0], mid = b.y + b.h / 2;
-    const lit = [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="[\d.]+" height="[\d.]+" fill="(#[0-9a-f]+)"/g)]
-      .filter((m) => t.win.includes(m[3]) && +m[1] >= b.x && +m[1] < b.x + b.w).map((m) => +m[2]);
-    return [lit.filter((y) => y < mid).length, lit.filter((y) => y >= mid).length];
-  };
-  const [recentTop, recentBottom] = halves(mk(today.slice(0, 7)));
-  const [oldTop, oldBottom] = halves(mk('2026-01'));
-  if (!(recentTop > recentBottom * 3 && oldBottom > oldTop * 3)) { fails++; console.error(`FAIL floors should follow months: this month top ${recentTop}/bottom ${recentBottom}, January top ${oldTop}/bottom ${oldBottom}`); }
-  console.log(`floors by month: commits this month light top ${recentTop} vs bottom ${recentBottom}; in January top ${oldTop} vs bottom ${oldBottom}`);
-  // Even the shortest building shows commits from every single month.
-  const months = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2025, 11 + i, 15)).toISOString().slice(0, 7));
-  for (const m of months) {
-    const d = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [],
-      repos: [{ name: 'tiny', fork: false, stars: 0, size_kb: 1, pushed_at: '2026-01-01T00:00:00Z', commit_days: [[m + '-15', 20]] }], recent_commits: [] }, { todayISO: today });
-    const [a, b] = halves(d);
-    if (a + b === 0) { fails++; console.error(`FAIL commits in ${m} lit no window on a short building`); }
+  const back = (k) => new Date(Date.parse(today + 'T12:00:00Z') - k * 86400000).toISOString().slice(0, 10);
+  const mk = (days) => derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [],
+    repos: [{ name: 'solo', fork: false, stars: 0, size_kb: 3000, pushed_at: today + 'T08:00:00Z', commit_days: days }], recent_commits: [] }, { todayISO: today });
+  for (const t of THEMES) {
+    const d = mk([[back(0), 10], [back(1), 1], [back(5), 3], [back(900), 50]]);
+    const svg = render(t, d), bld = layoutCity(d)[0];
+    const wins = [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" fill="(#[0-9a-f]+)"( class="tw")?/g)]
+      .filter((m) => +m[3] <= 6 && +m[4] <= 8 && +m[1] >= bld.x && +m[1] < bld.x + bld.w && +m[2] > bld.y && +m[2] < 204)
+      .map((m) => ({ x: +m[1], y: +m[2], f: m[5], tw: !!m[6] }));
+    const lit = wins.filter((w) => w.f !== (t.dwin || '').toLowerCase() && w.f !== t.dwin);
+    const top = wins.reduce((a, w) => (w.y < a.y || (w.y === a.y && w.x > a.x) ? w : a), wins[0]);
+    if (lit.length !== 3) { fails++; console.error(`FAIL ${t.name}: expected 3 lit day-windows, got ${lit.length}`); continue; }
+    if (!top || !top.tw || !lit.includes(top)) { fails++; console.error(`FAIL ${t.name}: today's window (top-right) should be lit and flicker`); }
+    if (new Set(lit.map((w) => w.f)).size !== 3) { fails++; console.error(`FAIL ${t.name}: 10, 1 and 3 commits should give 3 different intensities`); }
   }
+  console.log('day windows checked in every theme: today top-right, 3 intensities, old days not shown');
 }
 
 const cfg = { theme: 'classic-blue', light_theme: 'github-light', auto: { festivals: true, seasons: true } };

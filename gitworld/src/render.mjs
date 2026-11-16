@@ -4,6 +4,13 @@ import { FEATURES, GROUNDS } from './features.mjs';
 
 export const W = 900, H = 260, GY = 210;
 
+// Blend two hex colours: t = 0 gives a, t = 1 gives b.
+function mixHex(a, b, t) {
+  const rgb = (h) => { h = h.replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&'); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); };
+  const [x, y] = [rgb(a), rgb(b)];
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+
 const CSS = `
 .fb{transform-box:fill-box;transform-origin:center}
 .tw{animation:tw 3s ease-in-out infinite}
@@ -94,7 +101,7 @@ export const MAX_TOWERS = 60; // more than this can't fit in 900px
 export function layoutCity(data) {
   const towers = [
     ...(data.repos || []).map((r) => ({ key: 'pub:' + r.name, repo: r })),
-    ...(data.private_towers || []).map((p) => ({ key: 'priv:' + p.id, repo: { name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues, days_since_push: p.days_since_push, months: p.months } })),
+    ...(data.private_towers || []).map((p) => ({ key: 'priv:' + p.id, repo: { name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues, days_since_push: p.days_since_push, day_counts: p.day_counts } })),
   ];
   const shown = towers.sort((a, b) => repoScore(b.repo) - repoScore(a.repo)).slice(0, MAX_TOWERS)
     .sort((a, b) => hash('tower:' + a.key) - hash('tower:' + b.key));
@@ -199,50 +206,48 @@ export function render(themeIn, data) {
   p.push(layer('back'));
 
   // buildings + windows
-  const contrib = (data.calendar || []).map((d) => d.level).slice(-400);
-  let ci = 0;
-  // Windows tell each repo's past year. Floors are months: the ground floor
-  // is 11 months ago, the top floor is this month. Lit windows on a floor =
-  // your commits to that repo that month (none = dark floor, a busy month =
-  // a bright floor). Pushed in the last day: the top floors flicker (working
-  // late). If a repo's history can't be read, its lights fill from the ground
-  // up as high as the repo is recent instead.
+  // Every window is one day of that repo's life. Read a building like a
+  // calendar: the bottom-left window is the oldest day, then left to right
+  // along each floor, floor by floor up; the top-right window is today. A day
+  // you committed to the repo lights its window, brighter the more commits
+  // (4 levels: 1, 2-3, 4-6, 7+), in the theme's own colours. Today's window
+  // flickers if you committed today. Bigger buildings show more days.
+  // A repo whose daily history can't be read lights from the ground up as
+  // high as it is recent instead.
+  const DAY = 86400000, todayMs = Date.parse((data.today || '2000-01-01') + 'T12:00:00Z');
+  const dayISO = (back) => new Date(todayMs - back * DAY).toISOString().slice(0, 10);
+  const levelOf = (n) => (n <= 0 ? 0 : n === 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4);
   const fill = (days) => (days == null ? 0.35 : clamp(1 - (Math.log10(1 + days) / Math.log10(401)) * 0.95, 0.05, 1));
   const density = clamp(t.lit * 1.9, 0.35, 0.95);
-  const monthGlow = (n) => (n > 0 ? 0.25 + 0.75 * (1 - Math.exp(-n / 6)) : 0.02);
   for (const b of city) {
     b.fill = t.buildings === 'language' ? (b.repo?.language_color || pick(R, t.fillers)) : pick(R, t.buildings);
     p.push(E('rect', { x: b.x, y: b.y, width: b.w, height: b.h, fill: b.fill }));
     if (!b.small) {
       const ws = t.windowSize, step = ws + 4.5;
-      const days = b.repo?.days_since_push, level = fill(days), late = days != null && days <= 1, hist = b.repo?.months;
-      const rows = [];
-      for (let wy = b.y + 8; wy < GY - 6; wy += step) rows.push(wy);
-      rows.forEach((wy, ri) => {
-        const floor = (GY - wy) / b.h; // 0 at the street, 1 at the roof
-        // Row r (0 = bottom) covers its own share of the 12 months, so every
-        // month lands on some floor whatever the building's height.
-        const r = rows.length - 1 - ri, m0 = Math.floor((r * 12) / rows.length), m1 = Math.max(m0, Math.floor(((r + 1) * 12) / rows.length) - 1);
-        const monthCommits = hist ? hist.slice(m0, m1 + 1).reduce((a, n) => a + n, 0) : 0;
-        for (let wx = b.x + 4; wx < b.x + b.w - ws - 2; wx += t.windowGap) {
-          let c = null;
-          if (t.windowMode === 'contrib') {
-            const lvl = contrib.length ? contrib[ci++ % contrib.length] : 0;
-            c = lvl > 0 ? t.win[clamp(lvl - 1, 0, t.win.length - 1)] : t.dwin;
-            p.push(E('rect', { x: wx, y: wy, width: ws, height: ws * 1.25, fill: c }));
-            if (lvl > 0) ctx.windows.push({ x: wx, y: wy, s: ws, c });
-            continue;
-          }
-          const on = hist
-            ? R() < monthGlow(monthCommits) * density
-            : floor <= level + (R() - 0.5) * 0.18 && R() < density;
-          if (on) {
-            c = pick(R, t.win);
-            const flick = late && floor > 0.7 ? R() < 0.6 : R() < 0.06;
-            p.push(E('rect', { x: wx, y: wy, width: ws, height: ws * 1.25, fill: c, class: flick ? 'tw' : undefined, style: flick ? twinkle(R, late ? 1.2 : 3, late ? 2 : 6) : undefined }));
-            ctx.windows.push({ x: wx, y: wy, s: ws, c });
-          } else if (t.dwin) p.push(E('rect', { x: wx, y: wy, width: ws, height: ws * 1.25, fill: t.dwin }));
+      const counts = b.repo?.day_counts;
+      // This building's 4 light levels: GitHub-light uses GitHub's greens;
+      // other themes fade one theme colour (picked per repo) from dim to full.
+      const dark = t.dwin || mixHex(b.fill, '#000000', 0.35);
+      const hue = t.win[hash('hue:' + (b.repo?.name || '')) % t.win.length];
+      const levels = t.levels || (t.windowMode === 'contrib' ? t.win.slice(0, 4) : (t.mode === 'light' ? [0.6, 0.75, 0.88, 1] : [0.4, 0.62, 0.82, 1]).map((k) => mixHex(dark, hue, k)));
+      const grid = [];
+      for (let wy = b.y + 8; wy < GY - 6; wy += step) for (let wx = b.x + 4; wx < b.x + b.w - ws - 2; wx += t.windowGap) grid.push([wx, wy]);
+      // Calendar order: bottom row first, left to right.
+      grid.sort((a, c) => c[1] - a[1] || a[0] - c[0]);
+      const days = b.repo?.days_since_push, level = fill(days), late = days != null && days <= 1;
+      grid.forEach(([wx, wy], i) => {
+        let c = null, flick = false;
+        if (counts) {
+          const back = grid.length - 1 - i, n = counts[dayISO(back)] || 0, lv = levelOf(n);
+          if (lv) { c = levels[lv - 1]; flick = back === 0; }
+        } else {
+          const floor = (GY - wy) / b.h;
+          if (floor <= level + (R() - 0.5) * 0.18 && R() < density) { c = pick(R, t.win); flick = late && floor > 0.7 && R() < 0.6; }
         }
+        if (c) {
+          p.push(E('rect', { x: wx, y: wy, width: ws, height: ws * 1.25, fill: c, class: flick ? 'tw' : undefined, style: flick ? 'animation-duration:1.6s' : undefined }));
+          ctx.windows.push({ x: wx, y: wy, s: ws, c });
+        } else if (t.dwin) p.push(E('rect', { x: wx, y: wy, width: ws, height: ws * 1.25, fill: t.dwin }));
       });
       if (t.topDome && R() < 0.4) p.push(E('path', { d: `M${r1(b.x + 2)} ${r1(b.y)}a${r1(b.w / 2 - 2)} ${r1(b.w / 2 - 2)} 0 0 1 ${r1(b.w - 4)} 0z`, fill: t.topDome, opacity: 0.4 }));
       // An antenna with a blinking light (in the theme's beacon colour) means

@@ -203,21 +203,18 @@ export function derive(raw, { todayISO, learning = '' }) {
   const month = new Date(todayISO + 'T12:00:00Z').getUTCMonth();
   const year = Number(todayISO.slice(0, 4));
   // Each repo's days since its last push: drives how many of its windows are lit.
-  // Commits per month for the past 12 months: index 0 = 11 months ago,
-  // index 11 = this month. null when the history couldn't be read.
-  const monthIndex = (iso) => {
-    const a = new Date(todayISO + 'T12:00:00Z'), b = new Date(iso + 'T12:00:00Z');
-    return 11 - ((a.getUTCFullYear() - b.getUTCFullYear()) * 12 + a.getUTCMonth() - b.getUTCMonth());
-  };
-  const months = (days) => {
+  // Commits per day for each repo ({ 'YYYY-MM-DD': count }), or null when
+  // the history couldn't be read.
+  const dayCounts = (days) => {
     if (!Array.isArray(days)) return null;
-    const m = Array(12).fill(0);
-    for (const [d, n] of days) { const i = monthIndex(d); if (i >= 0 && i <= 11) m[i] += n; }
+    const m = {};
+    for (const [d, n] of days) m[d] = (m[d] || 0) + n;
     return m;
   };
-  const withAge = (r) => ({ ...r, days_since_push: daysSince(r.pushed_at, today), months: months(r.commit_days) });
+  const withAge = (r) => ({ ...r, days_since_push: daysSince(r.pushed_at, today), day_counts: dayCounts(r.commit_days) });
   return {
     ...raw,
+    today: todayISO,
     repos: (raw.repos || []).map(withAge),
     private_towers: (raw.private_towers || []).map(withAge),
     calendar: cal,
