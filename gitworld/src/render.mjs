@@ -227,12 +227,14 @@ export function render(themeIn, data) {
         }
       }
       if (t.topDome && R() < 0.4) p.push(E('path', { d: `M${r1(b.x + 2)} ${r1(b.y)}a${r1(b.w / 2 - 2)} ${r1(b.w / 2 - 2)} 0 0 1 ${r1(b.w - 4)} 0z`, fill: t.topDome, opacity: 0.4 }));
-      // A blinking beacon means something: it sits only on a project tower
-      // whose repo has open issues (the name sign then says how many).
-      // Other antennas are plain masts with a steady, dim light.
-      const cx = b.x + b.w / 2, mast = E('line', { x1: cx, y1: b.y, x2: cx, y2: b.y - 14, stroke: t.antenna, 'stroke-width': 1.5 });
-      if (b.repo?.open_issues > 0) p.push(mast + E('circle', { cx, cy: b.y - 15, r: 2.4, fill: t.beacon, class: 'tw', style: 'animation-duration:1.4s' }));
-      else if (b.antenna && !b.repo) p.push(mast + E('circle', { cx, cy: b.y - 15, r: 1.6, fill: t.antenna }));
+      // Rooftop antennas with a blinking light in the theme's beacon colour.
+      // A project tower with open issues always gets one (its name sign
+      // then shows how many issues).
+      if (b.antenna || b.repo?.open_issues > 0) {
+        const cx = b.x + b.w / 2;
+        p.push(E('line', { x1: cx, y1: b.y, x2: cx, y2: b.y - 14, stroke: t.antenna, 'stroke-width': 1.5 }) +
+          E('circle', { cx, cy: b.y - 15, r: 2.2, fill: t.beacon, class: 'tw', style: `animation-duration:1.4s;animation-delay:-${r1((b.x % 13) / 10)}s` }));
+      }
     } else {
       const door = t.windowMode === 'contrib' ? t.win[1] : t.win[0];
       if (t.smallRoof === 'dome') p.push(E('path', { d: `M${r1(b.x)} ${r1(b.y)}a${r1(b.w / 2)} ${r1(b.w / 2)} 0 0 1 ${r1(b.w)} 0z`, fill: t.domeColor || b.fill, opacity: t.domeColor ? 0.6 : 1 }));

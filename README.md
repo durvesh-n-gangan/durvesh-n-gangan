@@ -15,10 +15,9 @@
 
 - Each tall tower with a name sign is one of my public repositories. Bigger and more-starred repos are taller.
 - The more I've contributed in the last 7 days, the more windows are lit.
-- The billboard stands on the repo I committed to most recently and scrolls its latest commit messages.
-- A blinking red light with a red tag means that repo has open issues. The little creatures on the street are open issues too.
+- Blinking lights sit on the rooftop antennas. If a repo has open issues, its tower gets one too, and a tag under its name says how many.
+- The little creatures on the street are open issues as well.
+- In some themes, a billboard stands on the repo I committed to most recently and scrolls its latest commit messages.
 - The city is redrawn every hour from my GitHub activity.
-
-Name signs, the billboard and issue tags appear in the themes that have signs, such as Classic blue, Neon rain and Cyberpunk.
 
 </details>

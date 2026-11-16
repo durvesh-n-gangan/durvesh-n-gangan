@@ -660,14 +660,22 @@ export const FEATURES = {
   },
   langLegend: {
     layer: 'ui',
+    // One row of language swatches under the top-right label, above the
+    // rooftops, so it never covers a building's name sign.
     draw(ctx, o = {}) {
       const { fg = '#ffe1fb', bg = '#1a0b3b', y = 46 } = o;
       const langs = (ctx.data.languages || []).slice(0, 4);
       if (!langs.length) return '';
-      const w = Math.max(...langs.map((l) => textW(l.name))) + 32, x = 900 - w - 10;
-      return E('rect', { x, y: y - 14, width: w, height: langs.length * 16 + 10, rx: 5, fill: bg, opacity: 0.85 }) +
-        langs.map((l, i) => E('rect', { x: x + 8, y: y + i * 16 - 8, width: 9, height: 9, rx: 2, fill: l.color || '#8b949e' }) +
-          E('text', { x: x + 22, y: y + i * 16, 'font-family': MONO, 'font-size': 11, fill: fg }, esc(l.name.toLowerCase()))).join('');
+      const items = langs.map((l) => ({ l, w: textW(l.name.toLowerCase()) + 24 }));
+      const total = items.reduce((s, i) => s + i.w, 0) + 6;
+      let x = 890 - total;
+      let s = E('rect', { x: x - 4, y: y - 11, width: total + 4, height: 18, rx: 5, fill: bg, opacity: 0.85 });
+      for (const { l, w } of items) {
+        s += E('rect', { x: x + 4, y: y - 6, width: 9, height: 9, rx: 2, fill: l.color || '#8b949e' }) +
+          E('text', { x: x + 17, y: y + 2, 'font-family': MONO, 'font-size': 11, fill: fg }, esc(l.name.toLowerCase()));
+        x += w;
+      }
+      return s;
     },
   },
   contribLegend: {
