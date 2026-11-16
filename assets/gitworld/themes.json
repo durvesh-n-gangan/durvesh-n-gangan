@@ -1,0 +1,120 @@
+{
+  "date": "2026-11-17",
+  "live": {
+    "dark": "classic-blue",
+    "light": "github-light",
+    "reason": "configured theme"
+  },
+  "themes": [
+    {
+      "name": "classic-blue",
+      "label": "Classic blue",
+      "mode": "dark"
+    },
+    {
+      "name": "synthwave",
+      "label": "Synthwave",
+      "mode": "dark"
+    },
+    {
+      "name": "neon-rain",
+      "label": "Neon rain",
+      "mode": "dark"
+    },
+    {
+      "name": "winter-night",
+      "label": "Winter night",
+      "mode": "dark"
+    },
+    {
+      "name": "diwali",
+      "label": "Diwali night",
+      "mode": "dark"
+    },
+    {
+      "name": "pastel-day",
+      "label": "Pastel day",
+      "mode": "light"
+    },
+    {
+      "name": "github-light",
+      "label": "GitHub light",
+      "mode": "light"
+    },
+    {
+      "name": "sakura-dusk",
+      "label": "Sakura dusk",
+      "mode": "dark"
+    },
+    {
+      "name": "golden-hour",
+      "label": "Golden hour",
+      "mode": "dark"
+    },
+    {
+      "name": "gameboy",
+      "label": "Game Boy 8-bit",
+      "mode": "light"
+    },
+    {
+      "name": "mars-colony",
+      "label": "Mars colony",
+      "mode": "dark"
+    },
+    {
+      "name": "underwater",
+      "label": "Underwater city",
+      "mode": "dark"
+    },
+    {
+      "name": "matrix",
+      "label": "Matrix terminal",
+      "mode": "dark"
+    },
+    {
+      "name": "aurora",
+      "label": "Aurora night",
+      "mode": "dark"
+    },
+    {
+      "name": "cyberpunk",
+      "label": "Cyberpunk",
+      "mode": "dark"
+    },
+    {
+      "name": "autumn",
+      "label": "Autumn evening",
+      "mode": "dark"
+    },
+    {
+      "name": "halloween",
+      "label": "Halloween",
+      "mode": "dark"
+    },
+    {
+      "name": "new-year",
+      "label": "New Year",
+      "mode": "dark"
+    },
+    {
+      "name": "holi",
+      "label": "Holi",
+      "mode": "light"
+    },
+    {
+      "name": "noir",
+      "label": "Film noir",
+      "mode": "dark"
+    },
+    {
+      "name": "desert-oasis",
+      "label": "Desert oasis",
+      "mode": "light"
+    },
+    {
+      "name": "lunar-base",
+      "label": "Lunar base",
+      "mode": "dark"
+    }
+  ]
+}
