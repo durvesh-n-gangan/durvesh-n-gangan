@@ -118,7 +118,7 @@
 
 </details>
 
-
+<sub>Or open the <a href="https://durvesh-n-gangan.github.io/durvesh-n-gangan/">theme switcher page</a>, which remembers your pick.</sub>
 </details>
 <!-- /gitworld:switcher -->
 
