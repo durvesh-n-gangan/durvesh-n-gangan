@@ -69,7 +69,7 @@ for (const [mode, name] of [['dark', pick.dark], ['light', pick.light]]) {
   if (!rendered[name]) { failures.push(`live ${mode} theme "${name}" did not render`); continue; }
   writeFileSync(join(out, `gitworld-${mode}.svg`), rendered[name]);
 }
-writeFileSync(join(out, 'themes.json'), JSON.stringify({ date: today, live: pick, themes: THEMES.map((t) => ({ name: t.name, label: t.label, mode: t.mode || 'dark' })) }, null, 2));
+writeFileSync(join(out, 'themes.json'), JSON.stringify({ user: data.username, date: today, live: pick, themes: THEMES.map((t) => ({ name: t.name, label: t.label, mode: t.mode || 'dark' })) }, null, 2));
 
 // THEMES.md: a gallery page anyone can browse on GitHub, kept in sync with the code.
 const rel = (cfg.output_dir || 'assets/gitworld').replace(/^\.?\/*/, '');
@@ -77,6 +77,24 @@ const md = ['# GitWorld themes', '', `Every theme below is drawn from the same d
   `Live right now: **${pick.dark}** for dark mode, **${pick.light}** for light mode (${pick.reason}).`, ''];
 for (const t of THEMES) md.push(`### ${t.label}`, '', `\`"theme": "${t.name}"\``, '', `<img src="./${rel}/themes/${t.name}.svg" alt="${t.label} GitWorld city" width="100%">`, '');
 writeFileSync(join(root, 'THEMES.md'), md.join('\n'));
+
+// README theme switcher: visitors open "Switch theme" and unfold any city.
+// Only the text between the two marker comments is replaced.
+const readmePath = join(root, 'README.md');
+if (existsSync(readmePath)) {
+  const readme = readFileSync(readmePath, 'utf8');
+  const start = readme.match(/<!-- gitworld:switcher[^>]*-->/), end = '<!-- /gitworld:switcher -->';
+  if (start && readme.includes(end)) {
+    const order = [pick.dark, ...THEMES.map((t) => t.name).filter((n) => n !== pick.dark)];
+    const label = (n) => THEMES.find((t) => t.name === n).label;
+    const page = cfg.switcher_page ? `https://${data.username.toLowerCase()}.github.io/${data.username}/` : '';
+    const block = [start[0], '<details>', '<summary><b>Switch theme</b> · open, then click any theme to see my city in it</summary>', '',
+      ...order.map((n) => `<details><summary>${label(n)}${n === pick.dark ? ' (showing now)' : ''}</summary>\n\n<img src="./${rel}/themes/${n}.svg" alt="${label(n)} city" width="100%">\n\n</details>`),
+      '', page ? `<sub>Or open the <a href="${page}">theme switcher page</a>, which remembers your pick.</sub>` : '', '</details>', end].join('\n');
+    const next = readme.slice(0, start.index) + block + readme.slice(readme.indexOf(end) + end.length);
+    if (next !== readme) writeFileSync(readmePath, next);
+  }
+}
 
 console.log(`${useDemo ? 'demo data' : '@' + data.username} · ${today} · live: dark=${pick.dark}, light=${pick.light} (${pick.reason})`);
 console.log(`rendered ${Object.keys(rendered).length}/${THEMES.length} themes into ${out}`);

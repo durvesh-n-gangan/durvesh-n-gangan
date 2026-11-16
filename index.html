@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitWorld themes</title>
+<style>
+  :root { --bg: #0d1117; --panel: #161b22; --text: #e6edf3; --muted: #8b949e; --line: #30363d; --accent: #58a6ff; }
+  @media (prefers-color-scheme: light) { :root { --bg: #ffffff; --panel: #f6f8fa; --text: #1f2328; --muted: #59636e; --line: #d1d9e0; --accent: #0969da; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  p { margin: 0 0 20px; color: var(--muted); }
+  .city { width: 100%; aspect-ratio: 900 / 260; display: block; border-radius: 12px; background: var(--panel); }
+  .name { margin: 12px 0 20px; font-size: 14px; color: var(--muted); }
+  .name b { color: var(--text); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: inherit; font-size: 14px; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  a { color: var(--accent); }
+  footer { margin-top: 28px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">GitWorld</h1>
+  <p>An animated city drawn from real GitHub activity. Pick a theme; your choice is remembered in this browser only.</p>
+  <img class="city" id="city" alt="">
+  <div class="name" id="name"></div>
+  <div class="chips" id="chips" role="group" aria-label="Themes"></div>
+  <footer><a id="back" href="https://github.com/">Back to the GitHub profile</a></footer>
+</main>
+<script>
+  const KEY = 'gitworld-theme';
+  const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
+  const save = (v) => { try { localStorage.setItem(KEY, v); } catch {} };
+
+  fetch('assets/gitworld/themes.json', { cache: 'no-store' }).then((r) => r.json()).then((info) => {
+    const user = info.user || '';
+    if (user) {
+      document.getElementById('title').textContent = user + "'s GitWorld";
+      document.title = user + "'s GitWorld";
+      document.getElementById('back').href = 'https://github.com/' + user;
+    }
+    const names = info.themes.map((t) => t.name);
+    const fromUrl = new URLSearchParams(location.search).get('theme');
+    let current = [fromUrl, read(), info.live && info.live.dark].find((n) => n && names.includes(n)) || names[0];
+    const chips = document.getElementById('chips');
+    const show = (name) => {
+      current = name;
+      const t = info.themes.find((x) => x.name === name);
+      const img = document.getElementById('city');
+      img.src = 'assets/gitworld/themes/' + name + '.svg?d=' + encodeURIComponent(info.date || '');
+      img.alt = t.label + ' city';
+      document.getElementById('name').innerHTML = 'Showing <b></b>' + (info.live && name === info.live.dark ? ' (the owner’s pick)' : '');
+      document.querySelector('#name b').textContent = t.label;
+      for (const b of chips.children) b.setAttribute('aria-pressed', String(b.dataset.name === name));
+    };
+    for (const t of info.themes) {
+      const b = document.createElement('button');
+      b.textContent = t.label;
+      b.dataset.name = t.name;
+      b.addEventListener('click', () => { save(t.name); show(t.name); });
+      chips.appendChild(b);
+    }
+    show(current);
+  }).catch(() => {
+    document.getElementById('name').textContent = 'Could not load the themes. Try refreshing.';
+  });
+</script>
+</body>
+</html>

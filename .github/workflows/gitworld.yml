@@ -73,7 +73,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/gitworld THEMES.md gitworld.config.json
+          git add assets/gitworld THEMES.md gitworld.config.json README.md
           git diff --cached --quiet || git commit -m "chore: redraw gitworld city"
           # main may have moved while drawing (e.g. you edited the README); catch up, then push
           git pull --rebase -X theirs || true
