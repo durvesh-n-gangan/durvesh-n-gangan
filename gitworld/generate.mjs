@@ -51,7 +51,7 @@ const username = cfgUser || (inCI ? process.env.GITHUB_REPOSITORY_OWNER || '' : 
 const useDemo = flag('--demo') || (!username && !inCI);
 if (!useDemo && !username) fail('No username: set "username" in gitworld.config.json.');
 
-const raw = useDemo ? demoRaw(today) : await fetchRaw(username, process.env.GITHUB_TOKEN, { includePrivate: cfg.private_repos !== false });
+const raw = useDemo ? demoRaw(today) : await fetchRaw(username, process.env.GITHUB_TOKEN, { includePrivate: cfg.private_repos !== false, privateToken: process.env.GITWORLD_TOKEN || '' });
 const data = derive(raw, { todayISO: today, learning: cfg.learning || '' });
 const out = join(root, cfg.output_dir || 'assets/gitworld');
 mkdirSync(join(out, 'themes'), { recursive: true });

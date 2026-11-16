@@ -110,7 +110,7 @@ for (const [name, raw] of Object.entries(fixtures)) {
     return ok([{ commit: { author: { date: '2026-11-15' }, message: 'public commit' } }]);
   };
   try {
-    const raw = await fetchRaw('durvesh-n-gangan', 'x');
+    const raw = await fetchRaw('durvesh-n-gangan', 'x', { privateToken: 'y' });
     const d = derive(raw, { todayISO: today });
     if (JSON.stringify(raw).includes('SECRET')) { fails++; console.error('FAIL private repo name kept in fetched data'); }
     if (raw.private_towers.length !== 2) { fails++; console.error('FAIL expected 2 private towers'); }
@@ -120,7 +120,7 @@ for (const [name, raw] of Object.entries(fixtures)) {
       if (svg.includes('SECRET') || raw.private_towers.some((p) => svg.includes(p.id))) { fails++; console.error(`FAIL ${t.name}: private repo leaked into picture`); }
       if ((svg.match(/tw beacon/g) || []).length !== 1) { fails++; console.error(`FAIL ${t.name}: private repo with issues should have one antenna`); }
     }
-    const noKey = await (async () => { globalThis.fetch = async (url, o) => (url.endsWith('/graphql') && JSON.parse(o.body).query.includes('viewer') ? ok({ errors: [{ message: 'Resource not accessible by integration' }] }) : realFetch === undefined ? ok([]) : ok({ data: { user: { login: 'durvesh-n-gangan', followers: { totalCount: 1 }, repositories: { nodes: [pub('NL2SQL', 0)] }, contributionsCollection: { contributionCalendar: { totalContributions: 0, weeks: [] } } } } })); return fetchRaw('durvesh-n-gangan', 'x'); })();
+    const noKey = await (async () => { globalThis.fetch = async (url, o) => (url.endsWith('/graphql') && JSON.parse(o.body).query.includes('viewer') ? ok({ errors: [{ message: 'Resource not accessible by integration' }] }) : realFetch === undefined ? ok([]) : ok({ data: { user: { login: 'durvesh-n-gangan', followers: { totalCount: 1 }, repositories: { nodes: [pub('NL2SQL', 0)] }, contributionsCollection: { contributionCalendar: { totalContributions: 0, weeks: [] } } } } })); return fetchRaw('durvesh-n-gangan', 'x', { privateToken: 'expired' }); })();
     if (noKey.private_towers.length !== 0) { fails++; console.error('FAIL without a personal key there should be no private towers'); }
   } finally { globalThis.fetch = realFetch; }
   console.log('private repos checked: unnamed, issue antennas, no leaks');

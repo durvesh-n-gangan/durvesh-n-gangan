@@ -67,7 +67,8 @@ jobs:
           '
       - name: Draw the city
         env:
-          GITHUB_TOKEN: ${{ secrets.GITWORLD_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITWORLD_TOKEN: ${{ secrets.GITWORLD_TOKEN }} # optional; only used to count private repos
         run: node gitworld/generate.mjs
       - name: Save the new images
         run: |

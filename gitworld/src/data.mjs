@@ -53,7 +53,10 @@ const warn = (msg) => console.warn(process.env.GITHUB_ACTIONS ? `::warning title
 // repos. GraphQL then returns what it can and marks the rest as errors, so
 // keep the partial answer, fill gaps from the public REST API, and leave out
 // anything still unknown (the city simply skips that detail).
-export async function fetchRaw(username, token, { includePrivate = true } = {}) {
+// token: the workflow's built-in key (public data). privateToken: your own
+// GITWORLD_TOKEN key, used only to count private repos. If it is missing or
+// stops working (expired, deleted), the city still draws your public repos.
+export async function fetchRaw(username, token, { includePrivate = true, privateToken = '' } = {}) {
   if (!token) throw new Error('GITHUB_TOKEN is not set. Use --demo to render with sample data.');
   const json = await gh('https://api.github.com/graphql', token, { query: QUERY, variables: { login: username } });
   const u = json.data?.user;
@@ -101,17 +104,21 @@ export async function fetchRaw(username, token, { includePrivate = true } = {}) 
   // Private repos become unnamed towers. Each gets an opaque id (a hash of
   // its name) so it keeps the same building; the name itself is dropped.
   let private_towers = [];
-  if (includePrivate) {
+  if (includePrivate && privateToken) {
     try {
-      const pj = await gh('https://api.github.com/graphql', token, { query: PRIVATE_QUERY });
+      const pj = await gh('https://api.github.com/graphql', privateToken, { query: PRIVATE_QUERY });
       const v = pj.data?.viewer;
-      if (v && v.login.toLowerCase() === username.toLowerCase()) {
+      if (!v) throw new Error(pj.errors?.map((e) => e.message).join('; ') || 'no data');
+      if (v.login.toLowerCase() !== username.toLowerCase()) warn(`the GITWORLD_TOKEN key belongs to ${v.login}, not ${username}, so private repos were left out`);
+      else {
         private_towers = (v.repositories?.nodes || []).filter((n) => n && !n.isFork).map((n) => ({
           id: createHash('sha1').update('private:' + n.name).digest('hex').slice(0, 12),
           size_kb: n.diskUsage || 0, stars: n.stargazerCount || 0, open_issues: n.issues?.totalCount ?? 0,
         }));
       }
-    } catch { /* no personal key, or it can't see private repos: public only */ }
+    } catch (e) {
+      warn(`your GITWORLD_TOKEN key did not work (${String(e.message).slice(0, 120)}). It may have expired: create a new one and replace the secret. Private repos were left out this time.`);
+    }
   }
 
   let followers = u.followers?.totalCount ?? null;
