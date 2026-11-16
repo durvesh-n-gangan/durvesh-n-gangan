@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       theme:
-        description: "Theme for this run only. 'config' uses gitworld.config.json."
+        description: "Pick a theme. It stays until you pick another."
         type: choice
-        default: config
+        default: keep-current
         options:
-          - config
+          - keep-current
           - rotate
           - random
           - classic-blue
@@ -54,15 +54,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Save your theme choice
+        if: github.event.inputs.theme && github.event.inputs.theme != 'keep-current'
+        env:
+          THEME: ${{ github.event.inputs.theme }}
+        run: |
+          node -e '
+            const fs = require("fs"), f = "gitworld.config.json";
+            const c = JSON.parse(fs.readFileSync(f, "utf8"));
+            c.theme = process.env.THEME; c.light_theme = "same";
+            fs.writeFileSync(f, JSON.stringify(c, null, 2) + "\n");
+          '
       - name: Draw the city
         env:
           GITHUB_TOKEN: ${{ secrets.GITWORLD_TOKEN || secrets.GITHUB_TOKEN }}
-          GITWORLD_THEME: ${{ github.event.inputs.theme != 'config' && github.event.inputs.theme || '' }}
         run: node gitworld/generate.mjs
       - name: Save the new images
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/gitworld THEMES.md
+          git add assets/gitworld THEMES.md gitworld.config.json
           git diff --cached --quiet || git commit -m "chore: redraw gitworld city"
           git push

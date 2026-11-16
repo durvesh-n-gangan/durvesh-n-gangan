@@ -106,7 +106,7 @@ export async function fetchRaw(username, token) {
   for (const r of repos.filter((r) => !r.fork).slice(0, 3)) {
     try {
       const commits = await gh(`https://api.github.com/repos/${username}/${r.name}/commits?per_page=3&author=${username}`, token);
-      for (const c of commits) recent_commits.push({ at: c.commit.author?.date, msg: c.commit.message });
+      for (const c of commits) recent_commits.push({ at: c.commit.author?.date, msg: `${r.name}: ${c.commit.message.split('\n')[0]}` });
     } catch { /* empty repo or no access: skip */ }
   }
   recent_commits.sort((a, b) => String(b.at).localeCompare(String(a.at)));

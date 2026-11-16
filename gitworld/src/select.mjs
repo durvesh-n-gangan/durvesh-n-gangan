@@ -50,12 +50,15 @@ function base(cfg, dateISO, choice) {
 }
 
 export function selectThemes(cfg, dateISO, override) {
+  // light_theme "same" shows light-mode visitors the same city as dark mode.
+  const lightFor = (dark) => (cfg.light_theme === 'same' ? dark : check(cfg.light_theme || 'github-light'));
   const check = (n) => { if (!THEME_NAMES.includes(n)) throw new Error(`Unknown theme "${n}". Options: ${THEME_NAMES.join(', ')}, rotate, random`); return n; };
   if (override) { const n = check(base(cfg, dateISO, override)); return { dark: n, light: n, reason: 'manual override' }; }
   const auto = cfg.auto || {};
   const fest = auto.festivals ? festivalFor(dateISO, cfg) : null;
   if (fest) return { dark: fest, light: fest, reason: `festival: ${fest}` };
   const season = auto.seasons ? seasonFor(dateISO) : null;
-  if (season) return { dark: season, light: check(cfg.light_theme || 'github-light'), reason: `season: ${season}` };
-  return { dark: check(base(cfg, dateISO, cfg.theme || 'classic-blue')), light: check(cfg.light_theme || 'github-light'), reason: 'configured theme' };
+  if (season) return { dark: season, light: lightFor(season), reason: `season: ${season}` };
+  const dark = check(base(cfg, dateISO, cfg.theme || 'classic-blue'));
+  return { dark, light: lightFor(dark), reason: 'configured theme' };
 }

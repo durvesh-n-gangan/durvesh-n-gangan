@@ -24,7 +24,11 @@ const MONO = 'monospace';
 // Where the commit billboard sits, so signs can stay out of its way.
 function billboardRect(ctx, width = 172) {
   if (!(ctx.data.recent_commits || []).length) return null;
-  const cands = [...landmarks(ctx), ...tall(ctx)].filter((b) => b.y - 36 >= 34).sort((a, b) => b.h - a.h);
+  // Prefer a plain building, so the commits don't look like they belong to
+  // whichever project tower the billboard happens to stand on.
+  const fits = (b) => b.y - 36 >= 34;
+  const byH = (a, b) => b.h - a.h;
+  const cands = [...tall(ctx).filter((b) => !b.repo && fits(b)).sort(byH), ...landmarks(ctx).filter(fits).sort(byH)];
   const b = cands[0];
   if (!b) return null;
   return { b, x: clamp(b.x + b.w / 2 - width / 2, 10, 890 - width), y: b.y - 36, width };
@@ -262,7 +266,7 @@ export const FEATURES = {
       const rect = billboardRect(ctx);
       if (!rect) return '';
       const { b, x: bx, y: by, width } = rect;
-      const msg = msgs.map((m) => m.split('\n')[0].slice(0, 60)).join('   ·   ') + '   ·   ';
+      const msg = msgs.map((m) => m.split('\n')[0].slice(0, 80)).join('   ·   ') + '   ·   ';
       const L = textW(msg);
       ctx.css.push(`@keyframes tick{to{transform:translateX(-${r1(L)}px)}}`);
       ctx.defs.push(E('clipPath', { id: 'bbclip' }, E('rect', { x: bx + 4, y: by + 2, width: width - 8, height: 20 })));

@@ -22,8 +22,8 @@ The workflow's built-in token can't read every detail of your other repos (open 
 | Always one theme | `"theme": "synthwave"` in `gitworld.config.json` |
 | A different theme every day | `"theme": "rotate"` (uses `rotate_list`, or all themes if empty) |
 | Surprise me | `"theme": "random"` |
-| Try one theme once | Actions tab → **GitWorld city** → **Run workflow** → pick from the dropdown |
-| Different theme for light-mode visitors | `"light_theme": "github-light"` |
+| Pick a theme without editing files | Actions tab → **GitWorld city** → **Run workflow** → pick from the dropdown → **Run workflow**. It stays until you pick another. |
+| Different theme for light-mode visitors | `"light_theme": "github-light"` (or `"same"` to match dark mode) |
 | Festival themes on their dates | `"auto": { "festivals": true }` (Diwali, Holi, New Year, Halloween) |
 | Season themes | `"auto": { "seasons": true }` (winter, sakura spring, autumn) |
 
