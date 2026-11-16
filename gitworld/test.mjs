@@ -99,6 +99,9 @@ for (const [name, raw] of Object.entries(fixtures)) {
   globalThis.fetch = async (url, o) => {
     if (url.endsWith('/graphql')) {
       const q = JSON.parse(o.body).query;
+      if (q.includes('commitContributionsByRepository')) return ok({ data: { viewer: { contributionsCollection: { commitContributionsByRepository: [
+        { repository: { name: 'SECRET-diary' }, contributions: { nodes: [{ occurredAt: today + 'T10:00:00Z', commitCount: 7 }] } }] } },
+        user: { contributionsCollection: { commitContributionsByRepository: [{ repository: { name: 'NL2SQL' }, contributions: { nodes: [{ occurredAt: today + 'T09:00:00Z', commitCount: 2 }] } }] } } } });
       if (q.includes('viewer')) return ok({ data: { viewer: { login: 'durvesh-n-gangan', repositories: { nodes: [
         { name: 'SECRET-diary', isFork: false, diskUsage: 5000, stargazerCount: 0, issues: { totalCount: 4 } },
         { name: 'SECRET-startup', isFork: false, diskUsage: 900, stargazerCount: 0, issues: { totalCount: 0 } }] } } } });
@@ -114,6 +117,8 @@ for (const [name, raw] of Object.entries(fixtures)) {
     const d = derive(raw, { todayISO: today });
     if (JSON.stringify(raw).includes('SECRET')) { fails++; console.error('FAIL private repo name kept in fetched data'); }
     if (raw.private_towers.length !== 2) { fails++; console.error('FAIL expected 2 private towers'); }
+    if (d.private_towers.find((p) => p.size_kb === 5000)?.months?.[11] !== 7) { fails++; console.error('FAIL private repo history should count 7 commits this month'); }
+    if (d.repos.find((r) => r.name === 'NL2SQL')?.months?.[11] !== 2) { fails++; console.error('FAIL public repo history should count 2 commits this month'); }
     if (d.repo_count !== 2) { fails++; console.error('FAIL repo count should only include public repos'); }
     for (const t of THEMES) {
       const svg = render(t, d);
@@ -135,6 +140,33 @@ for (const [name, raw] of Object.entries(fixtures)) {
   const fresh = litCount(render(t, at(today + 'T08:00:00Z'))), month = litCount(render(t, at('2026-10-16T08:00:00Z'))), old = litCount(render(t, at('2025-06-01T08:00:00Z')));
   if (!(fresh > month && month > old && old > 0)) { fails++; console.error(`FAIL lit windows should drop with age: today ${fresh}, month ${month}, old ${old}`); }
   console.log(`windows by recency: today ${fresh} lit, a month ago ${month}, over a year ${old}`);
+}
+
+// Floors are months: recent commits light the top, old ones the bottom.
+{
+  const t = THEMES.find((x) => x.name === 'classic-blue');
+  const { layoutCity } = await import('./src/render.mjs');
+  const mk = (month) => derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [],
+    repos: [{ name: 'solo', fork: false, stars: 0, size_kb: 90000, pushed_at: '2026-01-01T00:00:00Z',
+      commit_days: Array.from({ length: 10 }, (_, k) => [month + '-' + String(k + 10).padStart(2, '0'), 5]) }], recent_commits: [] }, { todayISO: today });
+  const halves = (d) => {
+    const svg = render(t, d), b = layoutCity(d)[0], mid = b.y + b.h / 2;
+    const lit = [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="[\d.]+" height="[\d.]+" fill="(#[0-9a-f]+)"/g)]
+      .filter((m) => t.win.includes(m[3]) && +m[1] >= b.x && +m[1] < b.x + b.w).map((m) => +m[2]);
+    return [lit.filter((y) => y < mid).length, lit.filter((y) => y >= mid).length];
+  };
+  const [recentTop, recentBottom] = halves(mk(today.slice(0, 7)));
+  const [oldTop, oldBottom] = halves(mk('2026-01'));
+  if (!(recentTop > recentBottom * 3 && oldBottom > oldTop * 3)) { fails++; console.error(`FAIL floors should follow months: this month top ${recentTop}/bottom ${recentBottom}, January top ${oldTop}/bottom ${oldBottom}`); }
+  console.log(`floors by month: commits this month light top ${recentTop} vs bottom ${recentBottom}; in January top ${oldTop} vs bottom ${oldBottom}`);
+  // Even the shortest building shows commits from every single month.
+  const months = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2025, 11 + i, 15)).toISOString().slice(0, 7));
+  for (const m of months) {
+    const d = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [],
+      repos: [{ name: 'tiny', fork: false, stars: 0, size_kb: 1, pushed_at: '2026-01-01T00:00:00Z', commit_days: [[m + '-15', 20]] }], recent_commits: [] }, { todayISO: today });
+    const [a, b] = halves(d);
+    if (a + b === 0) { fails++; console.error(`FAIL commits in ${m} lit no window on a short building`); }
+  }
 }
 
 const cfg = { theme: 'classic-blue', light_theme: 'github-light', auto: { festivals: true, seasons: true } };

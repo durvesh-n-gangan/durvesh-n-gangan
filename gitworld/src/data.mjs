@@ -13,6 +13,20 @@ const STARS_QUERY = `query($login:String!){ user(login:$login){ repositories(fir
 // open-issue count are kept: names never leave this file.
 const PRIVATE_QUERY = `query{ viewer{ login repositories(first:100, ownerAffiliations:OWNER, privacy:PRIVATE, orderBy:{field:PUSHED_AT, direction:DESC}){ nodes{ name isFork diskUsage stargazerCount pushedAt issues(states:OPEN){ totalCount } } } } }`;
 
+// Your commits per repo per day over the past year (GitHub's own
+// contribution data). Only dates and counts are kept.
+const HISTORY = `commitContributionsByRepository(maxRepositories:100){ repository{ name } contributions(first:100){ nodes{ occurredAt commitCount } } }`;
+const PUBLIC_HISTORY_QUERY = `query($login:String!){ user(login:$login){ contributionsCollection{ ${HISTORY} } } }`;
+const PRIVATE_HISTORY_QUERY = `query{ viewer{ contributionsCollection{ ${HISTORY} } } }`;
+const historyMap = (cc) => {
+  const m = new Map();
+  for (const r of cc?.commitContributionsByRepository || []) {
+    if (!r?.repository) continue;
+    m.set(r.repository.name, (r.contributions?.nodes || []).filter(Boolean).map((n) => [String(n.occurredAt).slice(0, 10), n.commitCount || 0]));
+  }
+  return m;
+};
+
 const QUERY = `query($login:String!){
   user(login:$login){
     login
@@ -111,15 +125,33 @@ export async function fetchRaw(username, token, { includePrivate = true, private
       if (!v) throw new Error(pj.errors?.map((e) => e.message).join('; ') || 'no data');
       if (v.login.toLowerCase() !== username.toLowerCase()) warn(`the GITWORLD_TOKEN key belongs to ${v.login}, not ${username}, so private repos were left out`);
       else {
-        private_towers = (v.repositories?.nodes || []).filter((n) => n && !n.isFork).map((n) => ({
+        let hist = null;
+        try {
+          const cc = (await gh('https://api.github.com/graphql', privateToken, { query: PRIVATE_HISTORY_QUERY })).data?.viewer?.contributionsCollection;
+          if (cc) hist = historyMap(cc);
+        } catch { /* history is optional */ }
+        const nodes = (v.repositories?.nodes || []).filter(Boolean);
+        // If the key can't see private commit history at all (no private repo
+        // appears in it although some were pushed this year), don't draw them
+        // dark: fall back to lighting by last push.
+        const yearAgo = Date.now() - 365 * 86400000;
+        if (hist && !nodes.some((n) => hist.has(n.name)) && nodes.some((n) => Date.parse(n.pushedAt) > yearAgo)) hist = null;
+        private_towers = nodes.map((n) => ({
           id: createHash('sha1').update('private:' + n.name).digest('hex').slice(0, 12),
           size_kb: n.diskUsage || 0, stars: n.stargazerCount || 0, open_issues: n.issues?.totalCount ?? 0, pushed_at: n.pushedAt || null,
+          commit_days: hist ? hist.get(n.name) || [] : null,
         }));
       }
     } catch (e) {
       warn(`your GITWORLD_TOKEN key did not work (${String(e.message).slice(0, 120)}). It may have expired: create a new one and replace the secret. Private repos were left out this time.`);
     }
   }
+
+  // Public repos' commit history (the built-in key can read this).
+  try {
+    const hist = historyMap((await gh('https://api.github.com/graphql', token, { query: PUBLIC_HISTORY_QUERY, variables: { login: username } })).data?.user?.contributionsCollection);
+    for (const r of repos) r.commit_days = hist.get(r.name) || [];
+  } catch { /* fall back to lighting by last push */ }
 
   let followers = u.followers?.totalCount ?? null;
   if (followers == null) {
@@ -171,7 +203,19 @@ export function derive(raw, { todayISO, learning = '' }) {
   const month = new Date(todayISO + 'T12:00:00Z').getUTCMonth();
   const year = Number(todayISO.slice(0, 4));
   // Each repo's days since its last push: drives how many of its windows are lit.
-  const withAge = (r) => ({ ...r, days_since_push: daysSince(r.pushed_at, today) });
+  // Commits per month for the past 12 months: index 0 = 11 months ago,
+  // index 11 = this month. null when the history couldn't be read.
+  const monthIndex = (iso) => {
+    const a = new Date(todayISO + 'T12:00:00Z'), b = new Date(iso + 'T12:00:00Z');
+    return 11 - ((a.getUTCFullYear() - b.getUTCFullYear()) * 12 + a.getUTCMonth() - b.getUTCMonth());
+  };
+  const months = (days) => {
+    if (!Array.isArray(days)) return null;
+    const m = Array(12).fill(0);
+    for (const [d, n] of days) { const i = monthIndex(d); if (i >= 0 && i <= 11) m[i] += n; }
+    return m;
+  };
+  const withAge = (r) => ({ ...r, days_since_push: daysSince(r.pushed_at, today), months: months(r.commit_days) });
   return {
     ...raw,
     repos: (raw.repos || []).map(withAge),

@@ -94,7 +94,7 @@ export const MAX_TOWERS = 60; // more than this can't fit in 900px
 export function layoutCity(data) {
   const towers = [
     ...(data.repos || []).map((r) => ({ key: 'pub:' + r.name, repo: r })),
-    ...(data.private_towers || []).map((p) => ({ key: 'priv:' + p.id, repo: { name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues, days_since_push: p.days_since_push } })),
+    ...(data.private_towers || []).map((p) => ({ key: 'priv:' + p.id, repo: { name: p.id, private: true, size_kb: p.size_kb, stars: p.stars, open_issues: p.open_issues, days_since_push: p.days_since_push, months: p.months } })),
   ];
   const shown = towers.sort((a, b) => repoScore(b.repo) - repoScore(a.repo)).slice(0, MAX_TOWERS)
     .sort((a, b) => hash('tower:' + a.key) - hash('tower:' + b.key));
@@ -201,22 +201,29 @@ export function render(themeIn, data) {
   // buildings + windows
   const contrib = (data.calendar || []).map((d) => d.level).slice(-400);
   let ci = 0;
-  // "Lights on where you're working": each building's lights fill its floors
-  // from the ground up, as high as that repo is recent. Pushed today: lit to
-  // the top. A week ago: about two thirds. A month: about half. Months: only
-  // the lower floors. Over a year: a night guard's light or two. A repo pushed
-  // in the last day also has flickering top-floor lights (working late).
-  // Within the lit floors, the theme's own density keeps its character.
+  // Windows tell each repo's past year. Floors are months: the ground floor
+  // is 11 months ago, the top floor is this month. Lit windows on a floor =
+  // your commits to that repo that month (none = dark floor, a busy month =
+  // a bright floor). Pushed in the last day: the top floors flicker (working
+  // late). If a repo's history can't be read, its lights fill from the ground
+  // up as high as the repo is recent instead.
   const fill = (days) => (days == null ? 0.35 : clamp(1 - (Math.log10(1 + days) / Math.log10(401)) * 0.95, 0.05, 1));
   const density = clamp(t.lit * 1.9, 0.35, 0.95);
+  const monthGlow = (n) => (n > 0 ? 0.25 + 0.75 * (1 - Math.exp(-n / 6)) : 0.02);
   for (const b of city) {
     b.fill = t.buildings === 'language' ? (b.repo?.language_color || pick(R, t.fillers)) : pick(R, t.buildings);
     p.push(E('rect', { x: b.x, y: b.y, width: b.w, height: b.h, fill: b.fill }));
     if (!b.small) {
       const ws = t.windowSize, step = ws + 4.5;
-      const days = b.repo?.days_since_push, level = fill(days), late = days != null && days <= 1;
-      for (let wy = b.y + 8; wy < GY - 6; wy += step) {
+      const days = b.repo?.days_since_push, level = fill(days), late = days != null && days <= 1, hist = b.repo?.months;
+      const rows = [];
+      for (let wy = b.y + 8; wy < GY - 6; wy += step) rows.push(wy);
+      rows.forEach((wy, ri) => {
         const floor = (GY - wy) / b.h; // 0 at the street, 1 at the roof
+        // Row r (0 = bottom) covers its own share of the 12 months, so every
+        // month lands on some floor whatever the building's height.
+        const r = rows.length - 1 - ri, m0 = Math.floor((r * 12) / rows.length), m1 = Math.max(m0, Math.floor(((r + 1) * 12) / rows.length) - 1);
+        const monthCommits = hist ? hist.slice(m0, m1 + 1).reduce((a, n) => a + n, 0) : 0;
         for (let wx = b.x + 4; wx < b.x + b.w - ws - 2; wx += t.windowGap) {
           let c = null;
           if (t.windowMode === 'contrib') {
@@ -226,7 +233,9 @@ export function render(themeIn, data) {
             if (lvl > 0) ctx.windows.push({ x: wx, y: wy, s: ws, c });
             continue;
           }
-          const on = floor <= level + (R() - 0.5) * 0.18 && R() < density;
+          const on = hist
+            ? R() < monthGlow(monthCommits) * density
+            : floor <= level + (R() - 0.5) * 0.18 && R() < density;
           if (on) {
             c = pick(R, t.win);
             const flick = late && floor > 0.7 ? R() < 0.6 : R() < 0.06;
@@ -234,7 +243,7 @@ export function render(themeIn, data) {
             ctx.windows.push({ x: wx, y: wy, s: ws, c });
           } else if (t.dwin) p.push(E('rect', { x: wx, y: wy, width: ws, height: ws * 1.25, fill: t.dwin }));
         }
-      }
+      });
       if (t.topDome && R() < 0.4) p.push(E('path', { d: `M${r1(b.x + 2)} ${r1(b.y)}a${r1(b.w / 2 - 2)} ${r1(b.w / 2 - 2)} 0 0 1 ${r1(b.w - 4)} 0z`, fill: t.topDome, opacity: 0.4 }));
       // An antenna with a blinking light (in the theme's beacon colour) means
       // exactly one thing: this repo has open issues. More issues, faster
