@@ -45,6 +45,22 @@ for (const [name, raw] of Object.entries(fixtures)) {
   console.log(`${name}: ${ok}/${THEMES.length} themes ok`);
 }
 
+// A repo keeps its building when another repo is hidden or deleted, and the
+// billboard stands on the tower of the repo it shows commits from.
+{
+  const { layoutCity } = await import('./src/render.mjs');
+  const repo = (name, size_kb) => ({ name, fork: false, stars: 0, size_kb, pushed_at: '2026-11-15T00:00:00Z' });
+  const all = ['NL2SQL', 'AWS_Route53_Clone', 'AnimeRecommender', 'Floating-Timer', 'Everyday-Object-Catalog'].map((n, i) => repo(n, 500 + i * 400));
+  const where = (repos) => Object.fromEntries(layoutCity({ username: 'durvesh-n-gangan', repos }).filter((b) => b.repo).map((b) => [b.repo.name, b.x]));
+  const before = where(all), after = where(all.filter((r) => r.name !== 'AnimeRecommender'));
+  for (const [n, x] of Object.entries(after)) if (before[n] !== x) { fails++; console.error(`FAIL ${n} moved from x=${before[n]} to x=${x}`); }
+  const data = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [], repos: all,
+    recent_commits: [{ repo: 'Floating-Timer', msg: 'License' }, { repo: 'AWS_Route53_Clone', msg: 'chore: tidy' }, { repo: 'Floating-Timer', msg: 'fix: drag' }] }, { todayISO: today });
+  const svg = render(THEMES.find((t) => t.name === 'classic-blue'), data);
+  if (!svg.includes('License   ·   fix: drag') || svg.includes('chore: tidy')) { fails++; console.error('FAIL billboard should show only Floating-Timer commits'); }
+  console.log('stable towers and billboard checked');
+}
+
 const cfg = { theme: 'classic-blue', light_theme: 'github-light', auto: { festivals: true, seasons: true } };
 const expect = { '2026-11-08': 'diwali', '2026-03-04': 'holi', '2026-12-31': 'new-year', '2026-10-28': 'halloween', '2026-12-15': 'winter-night', '2026-04-01': 'sakura-dusk', '2026-10-05': 'autumn', '2026-07-01': 'classic-blue' };
 for (const [d, want] of Object.entries(expect)) {

@@ -100,16 +100,18 @@ export function layoutCity(data) {
   }
   const tallSlots = slots.filter((s) => !s.small);
   const repos = [...(data.repos || [])].filter((r) => !r.fork).sort((a, b) => repoScore(b) - repoScore(a)).slice(0, Math.min(12, tallSlots.length));
-  if (repos.length) {
-    const scores = repos.map(repoScore), mx = Math.max(...scores), mn = Math.min(...scores);
-    // Repos get the widest towers so their name signs fit.
-    const positions = [...tallSlots].sort((a, b) => b.w - a.w).slice(0, repos.length);
-    for (let i = positions.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [positions[i], positions[j]] = [positions[j], positions[i]]; }
-    repos.forEach((repo, i) => {
-      const s = positions[i];
-      s.repo = repo;
-      s.h = 104 + 66 * (mx === mn ? 0.6 : (scores[i] - mn) / (mx - mn));
-    });
+  // The 12 widest towers are reserved for repos (so name signs fit). Each
+  // repo picks its tower from a hash of its own name, so it keeps the same
+  // building when you add, delete or hide other repos.
+  const reserved = [...tallSlots].sort((a, b) => b.w - a.w).slice(0, Math.min(12, tallSlots.length)).sort((a, b) => a.x - b.x);
+  for (const repo of repos) {
+    let k = hash('tower:' + repo.name) % reserved.length;
+    while (reserved[k].repo) k = (k + 1) % reserved.length;
+    const s = reserved[k];
+    s.repo = repo;
+    // Height from the repo's own size and stars (not relative to the others),
+    // capped so a billboard still fits above the tallest tower.
+    s.h = 100 + 40 * clamp(repoScore(repo) / 10, 0, 1);
   }
   for (const s of slots) s.y = GY - s.h;
   return slots;

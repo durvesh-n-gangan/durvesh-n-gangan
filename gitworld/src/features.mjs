@@ -21,17 +21,21 @@ const spread = (arr, n) => {
 };
 const MONO = 'monospace';
 
-// Where the commit billboard sits, so signs can stay out of its way.
+// Commits as { repo, msg }; older data (demo, tests) may be plain strings.
+const commitsOf = (ctx) => (ctx.data.recent_commits || []).map((c) => (typeof c === 'string' ? { repo: null, msg: c } : c));
+
+// The billboard stands on the tower of the repo you committed to most
+// recently and shows only that repo's commits. Without such a tower (no
+// signs data, or the repo is not in the city) it uses the tallest plain one.
 function billboardRect(ctx, width = 172) {
-  if (!(ctx.data.recent_commits || []).length) return null;
-  // Prefer a plain building, so the commits don't look like they belong to
-  // whichever project tower the billboard happens to stand on.
+  const commits = commitsOf(ctx);
+  if (!commits.length) return null;
   const fits = (b) => b.y - 36 >= 34;
-  const byH = (a, b) => b.h - a.h;
-  const cands = [...tall(ctx).filter((b) => !b.repo && fits(b)).sort(byH), ...landmarks(ctx).filter(fits).sort(byH)];
-  const b = cands[0];
+  const own = commits[0].repo && landmarks(ctx).find((b) => b.repo.name === commits[0].repo && fits(b));
+  const b = own || tall(ctx).filter((t) => !t.repo && fits(t)).sort((a, c) => c.h - a.h)[0];
   if (!b) return null;
-  return { b, x: clamp(b.x + b.w / 2 - width / 2, 10, 890 - width), y: b.y - 36, width };
+  const msgs = (own ? commits.filter((c) => c.repo === own.repo.name) : commits).slice(0, 4).map((c) => c.msg);
+  return { b, msgs, x: clamp(b.x + b.w / 2 - width / 2, 10, 890 - width), y: b.y - 36, width };
 }
 const hasFeature = (ctx, name) => ctx.t.features.some((f) => (Array.isArray(f) ? f[0] : f) === name);
 const SANS = 'Segoe UI, Helvetica, Arial, sans-serif';
@@ -261,11 +265,10 @@ export const FEATURES = {
     layer: 'mid',
     // Scrolls your latest real commit messages. Hidden if there are none.
     draw(ctx, o = {}) {
-      const msgs = (ctx.data.recent_commits || []).slice(0, 4);
       const { border = '#58a6ff', color = '#7ee787', bg = '#0d1117' } = o;
       const rect = billboardRect(ctx);
       if (!rect) return '';
-      const { b, x: bx, y: by, width } = rect;
+      const { b, msgs, x: bx, y: by, width } = rect;
       const msg = msgs.map((m) => m.split('\n')[0].slice(0, 80)).join('   ·   ') + '   ·   ';
       const L = textW(msg);
       ctx.css.push(`@keyframes tick{to{transform:translateX(-${r1(L)}px)}}`);
