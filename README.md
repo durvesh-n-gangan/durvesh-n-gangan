@@ -9,8 +9,6 @@
 
 <!-- Replace YOUR NAME, then write a line or two about yourself: what you study, what you build, what you're learning. -->
 
-- Currently building: Nothing
-- Learning: DSA
 - Reach me: https://www.linkedin.com/in/durvesh-gangan-6796b731b
 
 <details>
