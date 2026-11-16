@@ -104,7 +104,7 @@ if (existsSync(readmePath) && liveFiles.dark && liveFiles.light) {
 // One-line summary on the run's page: what the city was built from.
 if (!useDemo) {
   const pubN = (data.repos || []).length, privN = (data.private_towers || []).length;
-  const withHist = [...(data.repos || []), ...(data.private_towers || [])].filter((r) => Array.isArray(r.months)).length;
+  const withHist = [...(data.repos || []), ...(data.private_towers || [])].filter((r) => r.day_counts != null).length;
   const issues = [...(data.repos || []), ...(data.private_towers || [])].reduce((a, r) => a + (r.open_issues || 0), 0);
   const msg = `${pubN + privN} buildings (${pubN} public, ${privN} private) · commit history read for ${withHist} of them · open issues: ${issues}`;
   console.log(inCI ? `::notice title=GitWorld::${msg}` : msg);
