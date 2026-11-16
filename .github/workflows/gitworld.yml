@@ -2,7 +2,7 @@ name: GitWorld city
 
 on:
   schedule:
-    - cron: "30 0 * * *" # every day at 06:00 India time
+    - cron: "17 * * * *" # every hour, so repo changes (made public/private, new commits) show up soon
   workflow_dispatch:
     inputs:
       theme:
@@ -37,7 +37,7 @@ on:
           - lunar-base
   push:
     branches: [main]
-    paths: ["gitworld/**", "gitworld.config.json"]
+    paths: ["gitworld/**", "gitworld.config.json", ".github/workflows/gitworld.yml"]
 
 permissions:
   contents: write
