@@ -113,7 +113,7 @@ export async function fetchRaw(username, token, { includePrivate = true, private
     }
   } catch { /* star dates are optional */ }
   // Your profile repo (named like you) holds this city. It still counts as
-  // one of your repos (it gets a tower), but no name sign and no billboard.
+  // one of your repos (it gets a tower), but no name sign.
   for (const r of repos) if (r.name.toLowerCase() === username.toLowerCase()) r.profile = true;
 
   // Private repos become unnamed towers. Each gets an opaque id (a hash of
@@ -163,16 +163,6 @@ export async function fetchRaw(username, token, { includePrivate = true, private
   const calendar = (cc?.weeks || []).flatMap((w) =>
     w.contributionDays.map((d) => ({ date: d.date, count: d.contributionCount, level: LEVEL[d.contributionLevel] ?? 0 })));
 
-  // Latest commit messages from your most recently pushed repos.
-  const recent_commits = [];
-  for (const r of repos.filter((r) => !r.fork && !r.profile).slice(0, 3)) {
-    try {
-      const commits = await gh(`https://api.github.com/repos/${username}/${r.name}/commits?per_page=3&author=${username}`, token);
-      for (const c of commits) recent_commits.push({ repo: r.name, at: c.commit.author?.date, msg: c.commit.message.split('\n')[0] });
-    } catch { /* empty repo or no access: skip */ }
-  }
-  recent_commits.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-
   return {
     username: u.login,
     followers,
@@ -180,7 +170,6 @@ export async function fetchRaw(username, token, { includePrivate = true, private
     calendar,
     repos,
     private_towers,
-    recent_commits: recent_commits.map(({ repo, msg }) => ({ repo, msg })),
   };
 }
 

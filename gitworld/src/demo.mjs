@@ -37,6 +37,5 @@ export function demoRaw(todayISO) {
       { name: 'cli-tool', language: 'Python', language_color: '#3572A5', stars: 0, size_kb: 300, pushed_at: ago(70), open_issues: 0, open_prs: 0 },
       { name: 'dotfiles', language: 'Shell', language_color: '#89e051', stars: 0, size_kb: 40, pushed_at: ago(100), open_issues: 0, open_prs: 0 },
     ],
-    recent_commits: ['feat: add contact form', 'fix: navbar on mobile', 'docs: update readme', 'refactor: split utils'],
   };
 }

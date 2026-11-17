@@ -45,8 +45,8 @@ for (const [name, raw] of Object.entries(fixtures)) {
   console.log(`${name}: ${ok}/${THEMES.length} themes ok`);
 }
 
-// A repo keeps its building when another repo is hidden or deleted, and the
-// billboard stands on the tower of the repo it shows commits from.
+// A repo keeps its building when another repo is hidden or deleted, and no
+// theme draws a billboard.
 {
   const { layoutCity } = await import('./src/render.mjs');
   const repo = (name, size_kb) => ({ name, fork: false, stars: 0, size_kb, pushed_at: '2026-11-15T00:00:00Z' });
@@ -68,11 +68,11 @@ for (const [name, raw] of Object.entries(fixtures)) {
   // The profile repo is a tower but never gets a name sign.
   const withProfile = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [], repos: [...all, { ...repo('durvesh-n-gangan', 300), profile: true }], recent_commits: [] }, { todayISO: today });
   for (const t of THEMES) if (/>durvesh-n[^<&'@]*</.test(render(t, withProfile).replace(/<title>[\s\S]*?<\/title>/, ''))) { fails++; console.error(`FAIL ${t.name}: profile repo got a name sign`); }
+  // No theme shows a billboard or commit messages, even if the data has them.
   const data = derive({ username: 'durvesh-n-gangan', followers: 1, contributions: 5, calendar: [], repos: all,
-    recent_commits: [{ repo: 'Floating-Timer', msg: 'License' }, { repo: 'AWS_Route53_Clone', msg: 'chore: tidy' }, { repo: 'Floating-Timer', msg: 'fix: drag' }] }, { todayISO: today });
-  const svg = render(THEMES.find((t) => t.name === 'classic-blue'), data);
-  if (!svg.includes('License   ·   fix: drag') || svg.includes('chore: tidy')) { fails++; console.error('FAIL billboard should show only Floating-Timer commits'); }
-  console.log('stable towers and billboard checked');
+    recent_commits: [{ repo: 'Floating-Timer', msg: 'SECRETMSG license' }] }, { todayISO: today });
+  for (const t of THEMES) if (render(t, data).includes('SECRETMSG')) { fails++; console.error(`FAIL ${t.name}: commit message drawn`); }
+  console.log('stable towers and no billboard checked');
 
   // Antennas only on repos with open issues; more issues blink faster; no
   // issue text anywhere.

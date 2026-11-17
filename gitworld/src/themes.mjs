@@ -14,7 +14,7 @@ export const THEMES = [
     buildings: ['#2f6bc4', '#3b7bd8', '#4a8ae6'], win: ['#cfe3ff', '#9cc8ff', '#ffffff'], lit: 0.45, dwin: '#24508f',
     ground: { type: 'bands', colors: ['#1f6feb', '#1958c4', '#14449c', '#0f3375', '#0a2040'] },
     features: [['moon', { x: 250, y: 58 }], 'shootingStar', ['clouds', { color: '#16264a', count: 2, y: 30, speed: 90 }],
-      ['signs', { colors: ['#79c0ff', '#a5d6ff', '#7ee787', '#d2a8ff'], bg: '#0d1117' }], ['billboard', { border: '#58a6ff', color: '#7ee787' }]],
+      ['signs', { colors: ['#79c0ff', '#a5d6ff', '#7ee787', '#d2a8ff'], bg: '#0d1117' }]],
     pill: { bg: '#0d1117', fg: '#58a6ff' },
   },
   {
@@ -131,7 +131,7 @@ export const THEMES = [
     buildings: ['#04200f', '#062a14', '#053018'], win: ['#00ff66', '#22ff88', '#0b8f3a'], lit: 0.4, dwin: '#06240f',
     antenna: '#0b8f3a', beacon: '#00ff66', hero: '#00ff66', monster: '#ff3b3b', lane: '#00ff66', cars: ['#00cc55', '#00aa44'],
     ground: { type: 'bands', colors: ['#00331a', '#002611', '#001a0b'] },
-    features: ['codeRain', ['billboard', { border: '#00ff66', color: '#00ff66', bg: '#000000' }], ['signs', { colors: ['#00ff66', '#22ff88'], bg: '#000000', issue: '#ff3b3b' }]],
+    features: ['codeRain', ['signs', { colors: ['#00ff66', '#22ff88'], bg: '#000000', issue: '#ff3b3b' }]],
     pill: { bg: '#000000', fg: '#00ff66' }, left: '{user}@gitworld:~$ {contributions} contributions', right: 'uptime {streak}d',
   },
   {
@@ -149,7 +149,7 @@ export const THEMES = [
     buildings: ['#0f1c26', '#122431', '#16303f'], win: ['#ff9e3d', '#2de2e6', '#ffd166'], lit: 0.4, dwin: '#13222e',
     antenna: '#2de2e6', beacon: '#ff9e3d', hero: '#2de2e6', monster: '#ff9e3d', lane: '#ff9e3d', cars: ['#2de2e6', '#ff9e3d', '#ff4fd8'],
     ground: { type: 'reflect', base: '#08070f', opacity: 0.35 },
-    features: [['moon', { x: 130, y: 50, r: 16, color: '#ff8fb1' }], 'flyingCars', ['signs', { colors: ['#ff9e3d', '#2de2e6', '#ff4fd8'] }], ['billboard', { border: '#2de2e6', color: '#ff9e3d', bg: '#08070f' }]],
+    features: [['moon', { x: 130, y: 50, r: 16, color: '#ff8fb1' }], 'flyingCars', ['signs', { colors: ['#ff9e3d', '#2de2e6', '#ff4fd8'] }]],
     pill: { bg: '#08070f', fg: '#2de2e6' }, right: 'night city · {repos} districts',
   },
   {

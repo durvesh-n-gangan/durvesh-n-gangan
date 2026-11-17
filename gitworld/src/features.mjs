@@ -22,25 +22,7 @@ const spread = (arr, n) => {
   return out;
 };
 const MONO = 'monospace';
-const GY = 210; // ground line (matches render.mjs)
 
-// Commits as { repo, msg }; older data (demo, tests) may be plain strings.
-const commitsOf = (ctx) => (ctx.data.recent_commits || []).map((c) => (typeof c === 'string' ? { repo: null, msg: c } : c));
-
-// The billboard stands on the tower of the repo you committed to most
-// recently and shows only that repo's commits. Without such a tower (no
-// signs data, or the repo is not in the city) it uses the tallest plain one.
-function billboardRect(ctx, width = 172) {
-  const commits = commitsOf(ctx);
-  if (!commits.length) return null;
-  const fits = (b) => b.y - 36 >= 34;
-  const own = commits[0].repo && landmarks(ctx).find((b) => b.repo.name === commits[0].repo && fits(b));
-  const b = own || tall(ctx).filter((t) => !t.repo && fits(t)).sort((a, c) => c.h - a.h)[0];
-  if (!b) return null;
-  const msgs = (own ? commits.filter((c) => c.repo === own.repo.name) : commits).slice(0, 4).map((c) => c.msg);
-  return { b, msgs, x: clamp(b.x + b.w / 2 - width / 2, 10, 890 - width), y: b.y - 36, width };
-}
-const hasFeature = (ctx, name) => ctx.t.features.some((f) => (Array.isArray(f) ? f[0] : f) === name);
 const SANS = 'Segoe UI, Helvetica, Arial, sans-serif';
 
 function falling(ctx, { count, shape, colors, name, dur = [6, 7], startY = 40 }) {
@@ -246,7 +228,6 @@ export const FEATURES = {
     // Neon signs with your real repo names on the landmark towers.
     draw(ctx, o = {}) {
       const { colors = ['#ff4fd8', '#36e2ff', '#ffd36b', '#7ee787', '#ffa657', '#a371f7'], bg = '#05060c' } = o;
-      const bb = hasFeature(ctx, 'billboard') ? billboardRect(ctx) : null;
       let s = '', i = 0;
       for (const b of landmarks(ctx)) {
         // Signs may hang a little past the tower edges.
@@ -254,37 +235,13 @@ export const FEATURES = {
         if (max < 4) continue;
         let name = b.repo.name;
         if (name.length > max) name = name.slice(0, max - 1) + '…';
-        const w = textW(name) + 10, x = clamp(b.x + b.w / 2 - w / 2, 6, 894 - w), y0 = b.y + 12, c = colors[i % colors.length];
-        // Never hide a name: if the billboard (and its pole) covers the sign's
-        // usual spot, hang the sign lower on its own tower instead.
-        let y = y0;
-        const hit = (yy) => bb && x < bb.x + bb.width && x + w > bb.x && yy < bb.y + 38 && yy + 16 > bb.y;
-        while (hit(y) && y + 16 < GY - 20) y += 20;
+        const w = textW(name) + 10, x = clamp(b.x + b.w / 2 - w / 2, 6, 894 - w), y = b.y + 12, c = colors[i % colors.length];
         i++;
         s += E('g', { style: anim('neon', 3 + (i % 4) * 0.9, { delay: i }) },
           E('rect', { x, y, width: w, height: 16, rx: 3, fill: bg, stroke: c, 'stroke-width': 1.5 }) +
           E('text', { x: x + w / 2, y: y + 12, 'text-anchor': 'middle', 'font-family': MONO, 'font-size': 11, fill: c }, esc(name)));
       }
       return s;
-    },
-  },
-  billboard: {
-    layer: 'mid',
-    // Scrolls your latest real commit messages. Hidden if there are none.
-    draw(ctx, o = {}) {
-      const { border = '#58a6ff', color = '#7ee787', bg = '#0d1117' } = o;
-      const rect = billboardRect(ctx);
-      if (!rect) return '';
-      const { b, msgs, x: bx, y: by, width } = rect;
-      const msg = msgs.map((m) => m.split('\n')[0].slice(0, 80)).join('   ·   ') + '   ·   ';
-      const L = textW(msg);
-      ctx.css.push(`@keyframes tick{to{transform:translateX(-${r1(L)}px)}}`);
-      ctx.defs.push(E('clipPath', { id: 'bbclip' }, E('rect', { x: bx + 4, y: by + 2, width: width - 8, height: 20 })));
-      const t = E('text', { x: bx + 6, y: by + 16, 'font-family': MONO, 'font-size': 11, fill: color }, esc(msg)) +
-        E('text', { x: bx + 6 + L, y: by + 16, 'font-family': MONO, 'font-size': 11, fill: color }, esc(msg));
-      return E('rect', { x: b.x + b.w / 2 - 2, y: by + 24, width: 4, height: 12, fill: '#8b949e' }) +
-        E('rect', { x: bx, y: by, width, height: 24, rx: 3, fill: bg, stroke: border, 'stroke-width': 1.5 }) +
-        E('g', { 'clip-path': 'url(#bbclip)' }, E('g', { style: anim('tick', L / 38) }, t));
     },
   },
   snowCaps: {

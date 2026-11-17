@@ -30,7 +30,6 @@ This city is my GitHub account, redrawn every hour from my real activity. Here's
 
 **On the rooftops**
 - **An antenna with a blinking light** means that repo has open issues. The more issues, the faster it blinks. No antenna means no open issues.
-- **The billboard** (Classic blue, Matrix and Cyberpunk themes) stands on the repo I committed to most recently and scrolls its latest commit messages.
 
 **On the street**
 - **The little creatures** are open issues on my public repos (up to 6).
